@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import heroImg from "@/assets/hero-product.jpg";
 import { ArrowRight, Leaf, ChevronDown } from "lucide-react";
 
@@ -22,13 +23,13 @@ export function Hero() {
             healthy-looking skin.
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-4">
-            <a
-              href="#shop"
+            <Link
+              to="/products"
               className="group inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-7 py-4 text-sm tracking-wide hover:bg-ink transition-all shadow-luxe"
             >
               See All Collection
               <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
-            </a>
+            </Link>
             <a
               href="#ingredients"
               className="inline-flex items-center gap-2 rounded-full border border-foreground/20 px-7 py-4 text-sm tracking-wide hover:bg-foreground/5 transition"

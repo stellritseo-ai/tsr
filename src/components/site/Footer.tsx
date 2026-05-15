@@ -1,7 +1,7 @@
 import { Instagram, Twitter, Facebook, Youtube } from "lucide-react";
 
 const cols = [
-  { title: "About", links: ["Our Story", "Ingredients", "Sustainability", "Press"] },
+  { title: "About", links: ["Home", "Story", "Product", "Contact Us"] },
   { title: "Help", links: ["Contact", "Shipping", "Returns", "FAQ", "Track order"] },
 ];
 
