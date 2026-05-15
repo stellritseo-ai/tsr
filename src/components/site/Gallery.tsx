@@ -3,15 +3,15 @@ import g1 from "@/assets/gallery-1.jpg";
 import g2 from "@/assets/gallery-2.jpg";
 import g3 from "@/assets/gallery-3.jpg";
 import g4 from "@/assets/gallery-4.jpg";
-import g5 from "@/assets/story-ingredients.jpg";
-import g6 from "@/assets/product-soap.jpg";
+import g5 from "@/assets/before-after.jpg";
+import g6 from "@/assets/3-shop.jpg";
 
 const items = [
-  { src: g1, span: "row-span-2" },
+  { src: g1, span: "md:row-span-2" },
   { src: g2, span: "" },
   { src: g3, span: "" },
   { src: g4, span: "" },
-  { src: g5, span: "row-span-2" },
+  { src: g5, span: "md:row-span-2" },
   { src: g6, span: "" },
 ];
 
