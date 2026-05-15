@@ -1,10 +1,10 @@
 import { Instagram } from "lucide-react";
-import g1 from "@/assets/gallery-1.jpg";
-import g2 from "@/assets/gallery-2.jpg";
-import g3 from "@/assets/gallery-3.jpg";
-import g4 from "@/assets/gallery-4.jpg";
-import g5 from "@/assets/before-after.jpg";
-import g6 from "@/assets/3-shop.jpg";
+import g1 from "@/assets/Hair-Butter1.jpg";
+import g2 from "@/assets/Growth-Oil2.jpg";
+import g3 from "@/assets/Rosemary.jpg";
+import g4 from "@/assets/Goat-Milk.jpg";
+import g5 from "@/assets/Charcoal-Detox.jpg";
+import g6 from "@/assets/Hydrating-Spray.jpg";
 
 const items = [
   { src: g1, span: "md:row-span-2" },
