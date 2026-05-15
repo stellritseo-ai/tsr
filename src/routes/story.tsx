@@ -7,9 +7,9 @@ import { ArrowRight, Leaf, Shield, Heart, Sparkles, Droplets, Wind, Star } from 
 
 // Images
 import heroImg from "@/assets/probg.jpg";
-import founderImg from "/Users/jitensony/.gemini/antigravity/brain/f56718ba-68bd-43cc-8bdd-ca621fc6e048/luxury_founder_portrait_1778793675748.png";
-import ingredientsImg from "/Users/jitensony/.gemini/antigravity/brain/f56718ba-68bd-43cc-8bdd-ca621fc6e048/botanical_ingredients_composition_1778793632857.png";
-import experienceImg from "/Users/jitensony/.gemini/antigravity/brain/f56718ba-68bd-43cc-8bdd-ca621fc6e048/spa_luxury_texture_1778793647187.png";
+import founderImg from "@/assets/founder.png";
+import ingredientsImg from "@/assets/ingredients-comp.png";
+import experienceImg from "@/assets/experience.png";
 
 export const Route = createFileRoute("/story")({
   component: StoryPage,
