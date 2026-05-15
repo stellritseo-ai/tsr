@@ -45,13 +45,13 @@ export function Footer() {
           <div className="lg:col-span-1">
             <div className="text-xs tracking-[0.3em] uppercase opacity-60">Studio</div>
             <p className="mt-5 text-sm opacity-80 leading-relaxed">
-              Brooklyn, NY<br />hello@tsrbeauty.co
+              Orlando, FL 32835<br />hello@tsrbeauty.co
             </p>
           </div>
         </div>
 
         <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-6 text-xs opacity-70">
-          <div>© {new Date().getFullYear()} TSR Beauty Co. All rights reserved.</div>
+          <div>© {new Date().getFullYear()} TSR Skin and Hair Care. All rights reserved.</div>
           <div className="flex items-center gap-5">
             <a href="#" aria-label="Instagram"><Instagram className="size-4 hover:opacity-100 opacity-70 transition" /></a>
             <a href="#" aria-label="Twitter"><Twitter className="size-4 hover:opacity-100 opacity-70 transition" /></a>
