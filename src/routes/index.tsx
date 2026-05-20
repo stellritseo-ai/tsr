@@ -49,7 +49,7 @@ function Index() {
       <main>
         <Hero />
         <Marquee />
-        <Products />
+        <Products onAddToCart={() => setCartOpen(true)} />
         <Story />
         <Ingredients />
         <BestSellers />
