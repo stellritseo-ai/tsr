@@ -16,14 +16,20 @@ import adminLogin from './_handlers/admin/login';
 import adminChangePassword from './_handlers/admin/change-password';
 
 export default async function handler(req: any, res: any) {
-  // Parse URL to get the path
-  const parsedUrl = url.parse(req.url || '', true);
-  const pathname = parsedUrl.pathname || '';
+  // Parse Vercel system header containing the original matched path before the rewrite
+  const matchedPath = req.headers['x-matched-path'] as string;
+  
+  let pathname = '';
+  if (matchedPath) {
+    pathname = url.parse(matchedPath).pathname || '';
+  } else {
+    pathname = url.parse(req.url || '', true).pathname || '';
+  }
 
-  // Clean pathname to handle Vercel routing variations
+  // Clean trailing slash
   const cleanPath = pathname.replace(/\/$/, '');
 
-  console.log(`[Vercel API Router] Route: ${cleanPath} | Method: ${req.method}`);
+  console.log(`[Vercel API Router] Route: ${cleanPath} | Vercel Matched: ${matchedPath || 'None'} | Method: ${req.method}`);
 
   try {
     switch (cleanPath) {
