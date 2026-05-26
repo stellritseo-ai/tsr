@@ -367,7 +367,7 @@ function generateCustomerConfirmationEmailHtml(order: Order): string {
                   <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 12px;">
                     <tr>
                       <td align="center">
-                        <a href="${order.items[0]?.link?.replace('/products', '') || 'https://tsrskincare.com'}/products"
+                        <a href="${order.items[0]?.link?.replace('/products', '') || 'https://tsrskinandhaircare.com'}/products"
                            style="display: inline-block; background-color: #1C1B19; color: #FFFFFF; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; text-decoration: none; padding: 16px 40px; border-radius: 100px;">
                           Shop More Botanicals →
                         </a>
@@ -382,7 +382,7 @@ function generateCustomerConfirmationEmailHtml(order: Order): string {
               <tr>
                 <td align="center" style="padding: 28px 40px 36px 40px; background-color: #F8F6F2; border-top: 1px solid #EAE6DF; text-align: center;">
                   <p style="margin: 0 0 8px 0; font-family: 'Inter', sans-serif; font-size: 12px; color: #8A857C; line-height: 1.6;">
-                    Questions? Contact us at <a href="mailto:support@tsrskincare.com" style="color: #C5A880; text-decoration: none;">support@tsrskincare.com</a> or call <strong>407-694-8624</strong>
+                    Questions? Contact us at <a href="mailto:support@tsrskinandhaircare.com" style="color: #C5A880; text-decoration: none;">support@tsrskinandhaircare.com</a> or call <strong>407-694-8624</strong>
                   </p>
                   <p style="margin: 0 0 8px 0; font-family: 'Inter', sans-serif; font-size: 11px; color: #A09B92; font-style: italic;">
                     "Premium botanical care, crafted for you."
