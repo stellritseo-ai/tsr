@@ -28,7 +28,7 @@ import productImg from "@/assets/3-Step-Hair-Growth.jpg";
 export const Route = createFileRoute("/contact")({
    component: ContactPage,
    head: () => ({
-      meta: [{ title: "Contact | TSR Beauty — Let’s Connect" }],
+      meta: [{ title: "Contact | TSR Skin & Hair Care — Let's Connect" }],
       links: [
          {
             rel: "stylesheet",

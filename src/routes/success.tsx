@@ -1,20 +1,57 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
-import { CheckCircle2, ArrowRight, Instagram, Mail } from "lucide-react";
+import { CheckCircle2, ArrowRight, Instagram, Mail, Loader2 } from "lucide-react";
+import { useCart } from "@/store/cartStore";
+import { createOrder } from "@/lib/serverFunctions";
 
 export const Route = createFileRoute("/success")({
   component: SuccessPage,
   head: () => ({
-    meta: [{ title: "Ritual Confirmed | TSR Beauty" }],
+    meta: [{ title: "Ritual Confirmed | TSR Skin & Hair Care" }],
   }),
 });
 
 function SuccessPage() {
+  const { clearCart } = useCart();
+  const [confirming, setConfirming] = useState(false);
+
+  useEffect(() => {
+    const pendingOrderStr = localStorage.getItem('tsr_pending_order');
+    if (pendingOrderStr) {
+      setConfirming(true);
+      try {
+        const order = JSON.parse(pendingOrderStr);
+        order.status = 'paid';
+        createOrder(order).then(() => {
+          localStorage.removeItem('tsr_pending_order');
+          clearCart();
+          setConfirming(false);
+        }).catch((err) => {
+          console.error('Failed to confirm order:', err);
+          setConfirming(false);
+        });
+      } catch (e) {
+        console.error(e);
+        setConfirming(false);
+      }
+    }
+  }, [clearCart]);
+
+  if (confirming) {
+    return (
+      <div className="min-h-screen bg-[#FDFCF9] flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="size-10 text-accent animate-spin" />
+        <p className="font-display text-xl animate-pulse">Confirming your payment...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#FDFCF9] selection:bg-accent/20">
-      <Nav onCartOpen={() => {}} />
-      
+      <Nav onCartOpen={() => { }} />
+
       <main className="max-w-4xl mx-auto px-6 pt-40 pb-24 text-center">
         <div className="space-y-12 animate-fade-up">
           <div className="relative inline-block">
@@ -26,20 +63,20 @@ function SuccessPage() {
 
           <div className="space-y-6">
             <span className="text-[10px] tracking-[0.5em] uppercase text-accent font-medium">Order Confirmed</span>
-            <h1 className="font-display text-6xl">Your ritual has begun.</h1>
+            <h1 className="font-display text-6xl">Your Order Has Been Confirmed.</h1>
             <p className="font-serif text-xl text-muted-foreground italic max-w-2xl mx-auto leading-relaxed">
-              Thank you for choosing Botanical Radiance. We are preparing your botanical treasures with care and will notify you as soon as they begin their journey to you.
+              Thank you for choosing TSR Skin & Hair Care. We are preparing your order with care and will notify you as soon as it is on its way to your address.
             </p>
           </div>
 
           <div className="flex flex-col md:flex-row justify-center gap-6 pt-8">
-            <Link 
+            <Link
               to="/products"
               className="bg-ink text-white px-12 py-5 rounded-full text-[10px] tracking-[0.4em] uppercase font-bold hover:bg-accent transition-all shadow-luxe flex items-center gap-3"
             >
               Back to Collection <ArrowRight className="size-4" />
             </Link>
-            <Link 
+            <Link
               to="/"
               className="border border-border/60 px-12 py-5 rounded-full text-[10px] tracking-[0.4em] uppercase font-bold hover:bg-white transition-all"
             >

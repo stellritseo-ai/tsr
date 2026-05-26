@@ -4,6 +4,7 @@ export interface OrderItem {
   price: number;
   quantity: number;
   image: string;
+  link?: string;
 }
 
 export interface Order {
@@ -18,6 +19,6 @@ export interface Order {
   subtotal: number;
   shipping: number;
   total: number;
-  status: 'pending' | 'processing' | 'shipped' | 'completed' | 'cancelled';
+  status: 'pending' | 'processing' | 'paid' | 'shipped' | 'completed' | 'cancelled';
   date: string;
 }

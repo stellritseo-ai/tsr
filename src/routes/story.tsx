@@ -14,7 +14,7 @@ import experienceImg from "@/assets/experience.png";
 export const Route = createFileRoute("/story")({
   component: StoryPage,
   head: () => ({
-    meta: [{ title: "Our Story | TSR Beauty — Elevated Self‑Care" }],
+    meta: [{ title: "Our Story | TSR Skin & Hair Care — Elevated Self‑Care" }],
     links: [
       {
         rel: "stylesheet",

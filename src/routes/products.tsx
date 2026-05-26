@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { CartDrawer } from "@/components/site/CartDrawer";
 import { ArrowRight, Leaf, Sparkles, Star, CheckCircle2, Search, SlidersHorizontal, ShoppingBag } from "lucide-react";
 import { products, Product } from "@/data/products";
 import { useCart } from "@/store/cartStore";
+import { getProducts } from "@/lib/serverFunctions";
 
 // Images for hero
 import heroImg from "@/assets/Hair-Butter1.jpg";
@@ -14,7 +15,7 @@ import aloeSheaImg from "@/assets/Aloe-Shea.jpg";
 export const Route = createFileRoute("/products")({
   component: ProductsPage,
   head: () => ({
-    meta: [{ title: "Collection | TSR Beauty — Luxury Botanical Hair Care" }],
+    meta: [{ title: "Collection | TSR Skin & Hair Care — Luxury Botanical Hair Care" }],
     links: [
       {
         rel: "stylesheet",
@@ -29,17 +30,32 @@ function ProductsPage() {
   const { addItem } = useCart();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [liveProducts, setLiveProducts] = useState<Product[]>(products);
+
+  useEffect(() => {
+    const fetchLiveProducts = async () => {
+      try {
+        const data = await getProducts();
+        if (data && Array.isArray(data) && data.length > 0) {
+          setLiveProducts(data as Product[]);
+        }
+      } catch (err) {
+        console.error("Failed to load live products, falling back to static:", err);
+      }
+    };
+    fetchLiveProducts();
+  }, []);
 
   const categories = ["all", "hair", "skin", "bundles", "men"];
 
   const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
+    return liveProducts.filter((p) => {
       const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                            p.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = activeCategory === "all" || p.category === activeCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [searchQuery, activeCategory]);
+  }, [liveProducts, searchQuery, activeCategory]);
 
   const handleAddToCart = (product: Product) => {
     addItem(product);
@@ -205,7 +221,7 @@ function ProductsPage() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {products.slice(0, 3).map((p) => (
+              {liveProducts.slice(0, 3).map((p) => (
                 <div key={p.id} className="group space-y-6">
                   <div className="aspect-square rounded-3xl overflow-hidden shadow-soft">
                     <img src={p.image} alt={p.name} className="size-full object-cover transition-transform duration-[1.5s] group-hover:scale-110" />

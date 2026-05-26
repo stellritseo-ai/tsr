@@ -6,7 +6,7 @@ import { XCircle, ArrowLeft, MessageCircle } from "lucide-react";
 export const Route = createFileRoute("/cancel")({
   component: CancelPage,
   head: () => ({
-    meta: [{ title: "Checkout Cancelled | TSR Beauty" }],
+    meta: [{ title: "Checkout Cancelled | TSR Skin & Hair Care" }],
   }),
 });
 

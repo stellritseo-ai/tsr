@@ -18,13 +18,13 @@ export const Route = createFileRoute("/")({
   component: Index,
   head: () => ({
     meta: [
-      { title: "TSR Beauty — Nature‑Powered Skin & Hair Care" },
+      { title: "TSR Skin & Hair Care — Nature‑Powered Skin & Hair Care" },
       {
         name: "description",
         content:
           "Handcrafted skincare and haircare infused with botanical ingredients — aloe vera, shea butter, rosemary, argan and more.",
       },
-      { property: "og:title", content: "TSR Beauty — Nature‑Powered Skin & Hair Care" },
+      { property: "og:title", content: "TSR Skin & Hair Care — Nature‑Powered Skin & Hair Care" },
       {
         property: "og:description",
         content: "Botanical rituals designed to nourish, hydrate, strengthen and restore.",

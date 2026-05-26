@@ -1,4 +1,5 @@
 import { MongoClient } from 'mongodb';
+import { sendOrderEmail, sendCustomerConfirmationEmail } from './utils/email';
 
 const uri = process.env.MONGODB_URI || '';
 const client = new MongoClient(uri);
@@ -14,6 +15,21 @@ export default async function handler(req: any, res: any) {
     const order = req.body;
     
     const result = await db.collection("orders").insertOne(order);
+
+    // Send merchant notification email
+    try {
+      await sendOrderEmail(order);
+    } catch (emailError) {
+      console.error('[Email Notification Error] Failed to send merchant notification:', emailError);
+    }
+
+    // Send customer order confirmation email
+    try {
+      await sendCustomerConfirmationEmail(order);
+    } catch (emailError) {
+      console.error('[Email Notification Error] Failed to send customer confirmation:', emailError);
+    }
+
     res.status(200).json({ success: true, orderId: result.insertedId });
   } catch (e: any) {
     res.status(500).json({ success: false, error: e.message });

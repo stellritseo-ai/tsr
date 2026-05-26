@@ -9,7 +9,7 @@ export function Newsletter() {
       <div className="relative mx-auto max-w-4xl glass rounded-[2.5rem] px-8 md:px-16 py-16 md:py-20 text-center shadow-luxe">
         <span className="text-xs tracking-[0.3em] uppercase text-accent">The Ritual</span>
         <h2 className="mt-3 font-display text-5xl md:text-6xl text-balance">
-          Join the TSR Beauty Ritual
+          Join the TSR Skin & Hair Care Ritual
         </h2>
         <p className="mt-5 text-muted-foreground max-w-lg mx-auto">
           Exclusive offers, slow‑skincare wisdom, and early access to new launches.

@@ -1,27 +1,25 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useCart } from "@/store/cartStore";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { ArrowLeft, CreditCard, Truck, ShieldCheck, ShoppingBag, ChevronRight } from "lucide-react";
 import { Order } from "@/types/order";
-import { createOrder, createCheckoutSession } from "@/lib/serverFunctions";
+import { createCheckoutSession } from "@/lib/serverFunctions";
 
 export const Route = createFileRoute("/checkout")({
   component: CheckoutPage,
   head: () => ({
-    meta: [{ title: "Checkout | Begin Your Ritual — TSR Beauty" }],
+    meta: [{ title: "Checkout | Begin Your Ritual — TSR Skin & Hair Care" }],
   }),
 });
 
 function CheckoutPage() {
-  const { state, clearCart } = useCart();
-  const navigate = useNavigate();
+  const { state } = useCart();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const total = state.items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const shipping = total > 50 ? 0 : 5.99;
-  const grandTotal = total + shipping;
+  const grandTotal = total; // Free shipping always
 
   const [formData, setFormData] = useState({
     email: "",
@@ -55,27 +53,31 @@ function CheckoutPage() {
           name: it.name,
           price: it.price,
           quantity: it.quantity,
-          image: it.image
+          image: it.image,
+          link: `${window.location.origin}/products`
         })),
         subtotal: total,
-        shipping: shipping,
+        shipping: 0,
         total: grandTotal,
         status: 'pending',
         date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
       };
 
-      // 1. Create order in database
-      await createOrder(newOrder);
+      // Save pending order to be created after Stripe payment
+      localStorage.setItem('tsr_pending_order', JSON.stringify(newOrder));
 
-      // 2. Initiate Stripe Checkout
-      const { url } = await createCheckoutSession(state.items);
+      // Initiate Stripe Checkout
+      const session = await createCheckoutSession(state.items);
 
-      // 3. Finalize
-      clearCart();
-      window.location.href = url;
-    } catch (err) {
+      if (session.error) {
+        throw new Error(session.error);
+      }
+
+      // Redirect to Stripe (Cart cleared on success page)
+      window.location.href = session.url;
+    } catch (err: any) {
       console.error("Checkout failed:", err);
-      alert("Something went wrong with your ritual. Please try again.");
+      alert(`Checkout failed: ${err.message || "Something went wrong. Please try again."}`);
     } finally {
       setLoading(false);
     }
@@ -183,36 +185,16 @@ function CheckoutPage() {
                 </div>
               </section>
 
-              <section className="space-y-6">
+              <section className="space-y-4">
                 <div className="flex items-center gap-3 border-b border-border/40 pb-4">
                   <div className="size-8 rounded-full bg-accent/10 flex items-center justify-center">
                     <CreditCard className="size-4 text-accent" />
                   </div>
-                  <h2 className="font-display text-2xl">Payment Selection</h2>
+                  <h2 className="font-display text-2xl">Payment</h2>
                 </div>
-                
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="relative group cursor-pointer">
-                    <input type="radio" name="payment" id="stripe" defaultChecked className="peer hidden" />
-                    <label htmlFor="stripe" className="block p-6 rounded-2xl bg-white border border-border/60 peer-checked:border-accent peer-checked:ring-1 peer-checked:ring-accent transition-all shadow-sm hover:shadow-md">
-                      <div className="font-display text-lg">Stripe</div>
-                      <div className="text-[10px] tracking-widest uppercase text-muted-foreground mt-1">Credit Card / Apple Pay</div>
-                    </label>
-                    <div className="absolute top-4 right-4 size-4 rounded-full border border-border/60 group-peer-checked:bg-accent group-peer-checked:border-accent flex items-center justify-center transition-all">
-                      <div className="size-1.5 rounded-full bg-white" />
-                    </div>
-                  </div>
-
-                  <div className="relative group cursor-pointer">
-                    <input type="radio" name="payment" id="cod" className="peer hidden" />
-                    <label htmlFor="cod" className="block p-6 rounded-2xl bg-white border border-border/60 peer-checked:border-accent peer-checked:ring-1 peer-checked:ring-accent transition-all shadow-sm hover:shadow-md">
-                      <div className="font-display text-lg">COD</div>
-                      <div className="text-[10px] tracking-widest uppercase text-muted-foreground mt-1">Cash on Delivery</div>
-                    </label>
-                    <div className="absolute top-4 right-4 size-4 rounded-full border border-border/60 group-peer-checked:bg-accent group-peer-checked:border-accent flex items-center justify-center transition-all">
-                      <div className="size-1.5 rounded-full bg-white" />
-                    </div>
-                  </div>
+                <div className="p-6 rounded-2xl bg-white border border-accent ring-1 ring-accent shadow-sm">
+                  <div className="font-display text-lg">Secure Card Payment</div>
+                  <div className="text-[10px] tracking-widest uppercase text-muted-foreground mt-1">Credit Card · Debit Card · Apple Pay · Google Pay</div>
                 </div>
               </section>
 
@@ -264,11 +246,8 @@ function CheckoutPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Shipping</span>
-                  <span>{shipping === 0 ? "Free Ritual Delivery" : `$${shipping.toFixed(2)}`}</span>
+                  <span className="text-accent font-medium">Free Delivery ✨</span>
                 </div>
-                {shipping > 0 && (
-                  <p className="text-[10px] text-accent italic">Add ${(50 - total).toFixed(2)} more to unlock complimentary delivery.</p>
-                )}
                 <div className="flex justify-between items-baseline pt-4">
                   <span className="font-display text-2xl">Total</span>
                   <span className="font-display text-3xl text-accent">${grandTotal.toFixed(2)}</span>

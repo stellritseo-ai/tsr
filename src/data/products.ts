@@ -154,5 +154,14 @@ export const products: Product[] = [
     includes: ["Repair Hair Butter", "Leave-In Spray", "Bald Spot Oil"],
     benefits: ["Full restoration system", "Complete men's ritual", "Moisture + Growth Support", "Premium hair care"],
     image: bundleImg,
+  },
+  {
+    id: "dummy-product",
+    name: "dummy Product",
+    price: 2.00,
+    category: "hair",
+    description: "A dummy product for testing checkout flows and payment methods.",
+    benefits: ["Testing Stripe integration", "Quick checkout"],
+    image: oilImg,
   }
 ];
