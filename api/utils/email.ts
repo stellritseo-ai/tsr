@@ -524,7 +524,7 @@ export async function sendOrderEmail(order: Order, envOverrides?: Record<string,
     return (envOverrides && envOverrides[key]) || process.env[key] || '';
   };
 
-  const merchantEmail = getEnv('MERCHANT_EMAIL') || 'jitensony@gmail.com';
+  const merchantEmail = getEnv('MERCHANT_EMAIL') || 'tsrskinandhair@gmail.com';
   const resendApiKey  = getEnv('RESEND_API_KEY');
 
   const subject = `✨ New Ritual Order ${order.id} Placed — $${order.total.toFixed(2)}`;
@@ -773,7 +773,7 @@ export async function sendContactFormEmail(contactData: any, envOverrides?: Reco
     return (envOverrides && envOverrides[key]) || process.env[key] || '';
   };
 
-  const merchantEmail = getEnv('MERCHANT_EMAIL') || 'jitensonyas@gmail.com';
+  const merchantEmail = getEnv('MERCHANT_EMAIL') || 'tsrskinandhair@gmail.com';
   const resendApiKey  = getEnv('RESEND_API_KEY');
 
   const subject = `📩 New TSR Message from ${contactData.name}: ${contactData.subject || 'General'}`;
