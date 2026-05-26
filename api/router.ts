@@ -1,8 +1,8 @@
 import url from 'url';
 import crypto from 'crypto';
 import Stripe from 'stripe';
-import { connectToDatabase } from './_utils/mongodb.ts';
-import { sendOrderEmail, sendCustomerConfirmationEmail, sendContactFormEmail } from './_utils/email.ts';
+import { connectToDatabase } from './_utils/mongodb.js';
+import { sendOrderEmail, sendCustomerConfirmationEmail, sendContactFormEmail } from './_utils/email.js';
 
 // ─── HELPER: HASH PASSWORD ──────────────────────────────────────────────────
 function hashPassword(password: string): string {
