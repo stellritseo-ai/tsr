@@ -445,6 +445,37 @@ export default defineConfig(({ mode }) => {
                   });
                   return;
                 }
+
+                if (req.url === '/api/send-contact-message' && req.method === 'POST') {
+                  let body = '';
+                  req.on('data', chunk => { body += chunk; });
+                  req.on('end', async () => {
+                    try {
+                      const contactData = JSON.parse(body);
+                      
+                      const result = await db.collection("contact_messages").insertOne({
+                        ...contactData,
+                        createdAt: new Date().toISOString()
+                      });
+
+                      try {
+                        const { sendContactFormEmail } = await import('./api/utils/email');
+                        await sendContactFormEmail(contactData, env);
+                      } catch (emailError) {
+                        console.error('[Email Notification Error] Failed to forward contact message:', emailError);
+                      }
+
+                      res.setHeader('Content-Type', 'application/json');
+                      res.end(JSON.stringify({ success: true, insertedId: result.insertedId }));
+                    } catch (err: any) {
+                      res.statusCode = 500;
+                      res.end(JSON.stringify({ success: false, error: err.message }));
+                    } finally {
+                      await client.close();
+                    }
+                  });
+                  return;
+                }
               } catch (e: any) {
                 res.statusCode = 500;
                 res.setHeader('Content-Type', 'application/json');

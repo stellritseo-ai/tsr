@@ -677,3 +677,191 @@ export async function sendOrderEmail(order: Order, envOverrides?: Record<string,
 
   return false;
 }
+
+/**
+ * Generates an elegant, HTML luxury email template for contact inquiries.
+ */
+function generateContactEmailHtml(contact: { name: string; email: string; phone: string; subject: string; message: string }): string {
+  return `
+    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <title>New Correspondence Received</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+      <style type="text/css">
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;500;600;700&display=swap');
+        body { margin: 0; padding: 0; width: 100% !important; background-color: #FDFCF9; }
+      </style>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #FDFCF9; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;">
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #FDFCF9; padding: 40px 20px;">
+        <tr>
+          <td align="center" valign="top">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #FFFFFF; border-radius: 24px; overflow: hidden; border: 1px solid #EAE6DF; box-shadow: 0 10px 30px rgba(28, 27, 25, 0.03);">
+              <tr>
+                <td align="center" style="padding: 40px 40px 30px 40px; border-bottom: 1px solid #F6F4F0; background-color: #FFFFFF;">
+                  <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 28px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: #1C1B19; margin-bottom: 6px;">TSR SKIN & HAIR CARE</div>
+                  <div style="font-family: 'Inter', sans-serif; font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: #C5A880; font-weight: 600;">Premium Botanical Care</div>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 24px 40px; background-color: #F8F6F2; border-bottom: 1px solid #EAE6DF;">
+                  <span style="font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #C5A880; display: block; margin-bottom: 4px;">Client Inquiry</span>
+                  <h1 style="margin: 0; font-family: 'Playfair Display', Georgia, serif; font-size: 24px; font-weight: 600; color: #1C1B19; line-height: 1.3;">New message from ${contact.name}</h1>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 40px 40px 20px 40px;">
+                  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 35px;">
+                    <tr>
+                      <td>
+                        <h3 style="margin: 0 0 16px 0; font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-weight: 600; color: #1C1B19; border-bottom: 1px solid #EAE6DF; padding-bottom: 8px;">Contact Credentials</h3>
+                        <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                          <tr>
+                            <td style="padding: 4px 0; font-family: 'Inter', sans-serif; font-size: 13px; color: #8A857C; width: 120px; font-weight: 500;">Name:</td>
+                            <td style="padding: 4px 0; font-family: 'Inter', sans-serif; font-size: 13px; color: #1C1B19; font-weight: 600;">${contact.name}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 4px 0; font-family: 'Inter', sans-serif; font-size: 13px; color: #8A857C; font-weight: 500;">Email:</td>
+                            <td style="padding: 4px 0; font-family: 'Inter', sans-serif; font-size: 13px; color: #1C1B19; font-weight: 600;">
+                              <a href="mailto:${contact.email}" style="color: #1C1B19; text-decoration: underline;">${contact.email}</a>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 4px 0; font-family: 'Inter', sans-serif; font-size: 13px; color: #8A857C; font-weight: 500;">Phone:</td>
+                            <td style="padding: 4px 0; font-family: 'Inter', sans-serif; font-size: 13px; color: #1C1B19; font-weight: 600;">${contact.phone || 'N/A'}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 4px 0; font-family: 'Inter', sans-serif; font-size: 13px; color: #8A857C; font-weight: 500;">Subject:</td>
+                            <td style="padding: 4px 0; font-family: 'Inter', sans-serif; font-size: 13px; color: #1C1B19; font-weight: 600;">${contact.subject || 'General Inquiry'}</td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 25px;">
+                    <tr>
+                      <td style="background-color: #FDFCF9; border-radius: 12px; border: 1px solid #F1EDE7; padding: 24px 24px; font-family: 'Inter', sans-serif; font-size: 14px; color: #1C1B19; line-height: 1.6; font-style: italic;">
+                        ${contact.message.replace(/\n/g, '<br />')}
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td align="center" style="padding: 30px 40px 40px 40px; background-color: #F8F6F2; border-top: 1px solid #EAE6DF; text-align: center;">
+                  <p style="margin: 0; font-family: 'Inter', sans-serif; font-size: 10px; letter-spacing: 0.05em; color: #A09B92;">
+                    TSR Skin & Hair Care Correspondence System &copy; ${new Date().getFullYear()}
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+}
+
+/**
+ * Sends a notification email to the store owner about a new contact message.
+ */
+export async function sendContactFormEmail(contactData: any, envOverrides?: Record<string, string>): Promise<boolean> {
+  const getEnv = (key: string): string => {
+    return (envOverrides && envOverrides[key]) || process.env[key] || '';
+  };
+
+  const merchantEmail = getEnv('MERCHANT_EMAIL') || 'jitensonyas@gmail.com';
+  const resendApiKey  = getEnv('RESEND_API_KEY');
+
+  const subject = `📩 New TSR Message from ${contactData.name}: ${contactData.subject || 'General'}`;
+  const html    = generateContactEmailHtml(contactData);
+
+  console.log(`\n📧 [TSR Contact Email] Preparing message notification → ${merchantEmail}`);
+
+  // Resend API
+  if (resendApiKey) {
+    try {
+      const fromEmail = getEnv('SMTP_FROM') || 'TSR Skin & Hair Care <onboarding@resend.dev>';
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${resendApiKey}`,
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to:   merchantEmail,
+          subject,
+          html,
+        }),
+      });
+
+      if (response.ok) {
+        console.log(`✅ [TSR Contact Email] Delivered via Resend.`);
+        return true;
+      }
+    } catch (err) {
+      console.error('[TSR Contact Email] Resend error:', err);
+    }
+  }
+
+  // SMTP Configuration
+  const smtpHost = getEnv('SMTP_HOST');
+  const smtpPort = parseInt(getEnv('SMTP_PORT') || '587', 10);
+  const smtpUser = getEnv('SMTP_USER');
+  const smtpPass = getEnv('SMTP_PASS');
+  const smtpFrom = getEnv('SMTP_FROM') || `"TSR Skin & Hair Care" <${smtpUser}>`;
+
+  if (smtpHost && smtpUser && smtpPass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host:   smtpHost,
+        port:   smtpPort,
+        secure: smtpPort === 465,
+        auth: { user: smtpUser, pass: smtpPass },
+      });
+
+      await transporter.sendMail({
+        from:    smtpFrom,
+        to:      merchantEmail,
+        subject,
+        html,
+      });
+
+      console.log(`✅ [TSR Contact Email] Delivered via SMTP.`);
+      return true;
+    } catch (err) {
+      console.error('[TSR Contact Email] SMTP error:', err);
+    }
+  }
+
+  // Ethereal Dev Preview Fallback
+  try {
+    const testAccount = await nodemailer.createTestAccount();
+    const transporter  = nodemailer.createTransport({
+      host:   'smtp.ethereal.email',
+      port:   587,
+      secure: false,
+      auth: { user: testAccount.user, pass: testAccount.pass },
+    });
+
+    const info = await transporter.sendMail({
+      from:    `"TSR Skin & Hair Care" <${testAccount.user}>`,
+      to:      merchantEmail,
+      subject,
+      html,
+    });
+
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    console.log(`\n📬 [TSR Contact Email] Preview (dev): ${previewUrl}\n`);
+    return true;
+  } catch (err) {
+    console.error('[TSR Contact Email] Ethereal fallback failed:', err);
+  }
+
+  return false;
+}
+

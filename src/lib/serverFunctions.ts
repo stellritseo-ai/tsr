@@ -96,4 +96,19 @@ export const changeAdminPassword = async (currentPassword: string, newPassword: 
   return response.json();
 };
 
+export const sendContactMessage = async (contactData: {
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+}) => {
+  const response = await fetch('/api/send-contact-message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(contactData),
+  });
+  return response.json();
+};
+
 
