@@ -1,11 +1,17 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import crypto from "crypto";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  
+  function hashPassword(password: string): string {
+    const salt = 'tsr_secret_salt_2026';
+    return crypto.createHash('sha256').update(password + salt).digest('hex');
+  }
   
   return {
     plugins: [
@@ -387,17 +393,38 @@ export default defineConfig(({ mode }) => {
                       if (!user) {
                         const count = await db.collection("admin_user").countDocuments();
                         if (count === 0 && username === 'tsr_admin') {
+                          const hashedPassword = hashPassword('tsr123456');
                           await db.collection("admin_user").insertOne({
                             username: 'tsr_admin',
-                            password: 'tsr123456'
+                            password: hashedPassword
                           });
-                          user = { username: 'tsr_admin', password: 'tsr123456' } as any;
+                          user = { username: 'tsr_admin', password: hashedPassword } as any;
                         }
                       }
 
-                      if (user && user.password === password) {
-                        res.setHeader('Content-Type', 'application/json');
-                        res.end(JSON.stringify({ success: true, token: 'tsr_admin_session_token' }));
+                      if (user) {
+                        const hashedInput = hashPassword(password);
+                        let isValid = false;
+
+                        if (user.password === hashedInput) {
+                          isValid = true;
+                        } else if (user.password === password) {
+                          // Backward-compatible plain text check: auto-upgrade to secure hash
+                          isValid = true;
+                          await db.collection("admin_user").updateOne(
+                            { _id: user._id },
+                            { $set: { password: hashedInput } }
+                          );
+                        }
+
+                        if (isValid) {
+                          res.setHeader('Content-Type', 'application/json');
+                          res.end(JSON.stringify({ success: true, token: 'tsr_admin_session_token' }));
+                        } else {
+                          res.statusCode = 401;
+                          res.setHeader('Content-Type', 'application/json');
+                          res.end(JSON.stringify({ success: false, error: 'Invalid username or password' }));
+                        }
                       } else {
                         res.statusCode = 401;
                         res.setHeader('Content-Type', 'application/json');
@@ -418,24 +445,36 @@ export default defineConfig(({ mode }) => {
                   req.on('data', chunk => { body += chunk; });
                   req.on('end', async () => {
                     try {
-                      const { currentPassword, newPassword } = JSON.parse(body);
-                      const user = await db.collection("admin_user").findOne({ username: 'tsr_admin' });
-                      
-                      const finalUser = user || { password: 'tsr123456' };
+                       const { currentPassword, newPassword } = JSON.parse(body);
+                       const user = await db.collection("admin_user").findOne({ username: 'tsr_admin' });
+                       
+                       const hashedDefault = hashPassword('tsr123456');
+                       const finalUser = user || { password: hashedDefault };
 
-                      if (finalUser.password === currentPassword) {
-                        const result = await db.collection("admin_user").updateOne(
-                          { username: 'tsr_admin' },
-                          { $set: { password: newPassword } },
-                          { upsert: true }
-                        );
-                        res.setHeader('Content-Type', 'application/json');
-                        res.end(JSON.stringify({ success: true, modifiedCount: result.modifiedCount }));
-                      } else {
-                        res.statusCode = 400;
-                        res.setHeader('Content-Type', 'application/json');
-                        res.end(JSON.stringify({ success: false, error: 'Incorrect current password' }));
-                      }
+                       const hashedCurrentInput = hashPassword(currentPassword);
+                       let isValid = false;
+
+                       if (finalUser.password === hashedCurrentInput) {
+                         isValid = true;
+                       } else if (finalUser.password === currentPassword) {
+                         // Plain-text validation fallback for backward-compatibility
+                         isValid = true;
+                       }
+
+                       if (isValid) {
+                         const hashedNew = hashPassword(newPassword);
+                         const result = await db.collection("admin_user").updateOne(
+                           { username: 'tsr_admin' },
+                           { $set: { password: hashedNew } },
+                           { upsert: true }
+                         );
+                         res.setHeader('Content-Type', 'application/json');
+                         res.end(JSON.stringify({ success: true, modifiedCount: result.modifiedCount }));
+                       } else {
+                         res.statusCode = 400;
+                         res.setHeader('Content-Type', 'application/json');
+                         res.end(JSON.stringify({ success: false, error: 'Incorrect current password' }));
+                       }
                     } catch (err: any) {
                       res.statusCode = 500;
                       res.end(JSON.stringify({ success: false, error: err.message }));

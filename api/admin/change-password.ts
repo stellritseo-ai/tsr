@@ -1,7 +1,13 @@
 import { MongoClient } from 'mongodb';
+import crypto from 'crypto';
 
 const uri = process.env.MONGODB_URI || '';
 const client = new MongoClient(uri);
+
+function hashPassword(password: string): string {
+  const salt = 'tsr_secret_salt_2026';
+  return crypto.createHash('sha256').update(password + salt).digest('hex');
+}
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -16,12 +22,24 @@ export default async function handler(req: any, res: any) {
     const user = await db.collection("admin_user").findOne({ username: 'tsr_admin' });
     
     // Seed default configuration if somehow missing
-    const finalUser = user || { password: 'tsr123456' };
+    const hashedDefault = hashPassword('tsr123456');
+    const finalUser = user || { password: hashedDefault };
 
-    if (finalUser.password === currentPassword) {
+    const hashedCurrentInput = hashPassword(currentPassword);
+    let isValid = false;
+
+    if (finalUser.password === hashedCurrentInput) {
+      isValid = true;
+    } else if (finalUser.password === currentPassword) {
+      // Plain-text fallback validation for backward-compatibility
+      isValid = true;
+    }
+
+    if (isValid) {
+      const hashedNew = hashPassword(newPassword);
       const result = await db.collection("admin_user").updateOne(
         { username: 'tsr_admin' },
-        { $set: { password: newPassword } },
+        { $set: { password: hashedNew } },
         { upsert: true }
       );
       res.status(200).json({ success: true, modifiedCount: result.modifiedCount });

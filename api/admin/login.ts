@@ -1,7 +1,13 @@
 import { MongoClient } from 'mongodb';
+import crypto from 'crypto';
 
 const uri = process.env.MONGODB_URI || '';
 const client = new MongoClient(uri);
+
+function hashPassword(password: string): string {
+  const salt = 'tsr_secret_salt_2026';
+  return crypto.createHash('sha256').update(password + salt).digest('hex');
+}
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -17,17 +23,37 @@ export default async function handler(req: any, res: any) {
     if (!user) {
       const count = await db.collection("admin_user").countDocuments();
       if (count === 0 && username === 'tsr_admin') {
-        // Seed default credentials
+        const hashedPassword = hashPassword('tsr123456');
+        // Seed default credentials as a secure hash
         await db.collection("admin_user").insertOne({
           username: 'tsr_admin',
-          password: 'tsr123456'
+          password: hashedPassword
         });
-        user = { username: 'tsr_admin', password: 'tsr123456' } as any;
+        user = { username: 'tsr_admin', password: hashedPassword } as any;
       }
     }
 
-    if (user && user.password === password) {
-      res.status(200).json({ success: true, token: 'tsr_admin_session_token' });
+    if (user) {
+      const hashedInput = hashPassword(password);
+      let isValid = false;
+
+      if (user.password === hashedInput) {
+        isValid = true;
+      } else if (user.password === password) {
+        // Backward-compatible plain text check: auto-upgrade to secure hash
+        isValid = true;
+        await db.collection("admin_user").updateOne(
+          { _id: user._id },
+          { $set: { password: hashedInput } }
+        );
+        console.log(`[TSR Admin] Automatically upgraded plain-text credentials for ${username} to secure hash.`);
+      }
+
+      if (isValid) {
+        res.status(200).json({ success: true, token: 'tsr_admin_session_token' });
+      } else {
+        res.status(401).json({ success: false, error: 'Invalid username or password' });
+      }
     } else {
       res.status(401).json({ success: false, error: 'Invalid username or password' });
     }
