@@ -1,8 +1,5 @@
-import { MongoClient } from 'mongodb';
+import { connectToDatabase } from '../_utils/mongodb';
 import { sendOrderEmail, sendCustomerConfirmationEmail } from '../_utils/email';
-
-const uri = process.env.MONGODB_URI || '';
-const client = new MongoClient(uri);
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -10,8 +7,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    await client.connect();
-    const db = client.db("tsr-commerce");
+    const { db } = await connectToDatabase();
     const order = req.body;
     
     const result = await db.collection("orders").insertOne(order);

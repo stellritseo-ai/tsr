@@ -1,8 +1,5 @@
-import { MongoClient } from 'mongodb';
+import { connectToDatabase } from '../../_utils/mongodb';
 import crypto from 'crypto';
-
-const uri = process.env.MONGODB_URI || '';
-const client = new MongoClient(uri);
 
 function hashPassword(password: string): string {
   const salt = 'tsr_secret_salt_2026';
@@ -15,8 +12,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    await client.connect();
-    const db = client.db("tsr-commerce");
+    const { db } = await connectToDatabase();
     const { username, password } = req.body;
     
     let user = await db.collection("admin_user").findOne({ username });
@@ -59,7 +55,5 @@ export default async function handler(req: any, res: any) {
     }
   } catch (e: any) {
     res.status(500).json({ success: false, error: e.message });
-  } finally {
-    await client.close();
   }
 }

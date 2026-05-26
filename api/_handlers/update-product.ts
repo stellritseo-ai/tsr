@@ -1,7 +1,4 @@
-import { MongoClient } from 'mongodb';
-
-const uri = process.env.MONGODB_URI || '';
-const client = new MongoClient(uri);
+import { connectToDatabase } from '../_utils/mongodb';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -9,8 +6,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    await client.connect();
-    const db = client.db("tsr-commerce");
+    const { db } = await connectToDatabase();
     const { id, ...updateFields } = req.body;
     
     const result = await db.collection("products").updateOne(
@@ -21,7 +17,5 @@ export default async function handler(req: any, res: any) {
     res.status(200).json({ success: true, updatedCount: result.modifiedCount });
   } catch (e: any) {
     res.status(500).json({ success: false, error: e.message });
-  } finally {
-    await client.close();
   }
 }

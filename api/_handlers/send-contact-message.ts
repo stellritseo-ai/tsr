@@ -1,8 +1,5 @@
-import { MongoClient } from 'mongodb';
+import { connectToDatabase } from '../_utils/mongodb';
 import { sendContactFormEmail } from '../_utils/email';
-
-const uri = process.env.MONGODB_URI || '';
-const client = new MongoClient(uri);
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -10,8 +7,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    await client.connect();
-    const db = client.db("tsr-commerce");
+    const { db } = await connectToDatabase();
     const contactData = req.body;
     
     // Save message to database
@@ -30,7 +26,5 @@ export default async function handler(req: any, res: any) {
     res.status(200).json({ success: true, insertedId: result.insertedId });
   } catch (e: any) {
     res.status(500).json({ success: false, error: e.message });
-  } finally {
-    await client.close();
   }
 }
