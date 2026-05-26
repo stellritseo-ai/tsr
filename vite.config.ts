@@ -41,7 +41,7 @@ export default defineConfig(({ mode }) => {
 
                       // Send email notification to merchant (swallowing any errors to prevent blocking successful checkouts)
                       try {
-                        const { sendOrderEmail } = await import('./api/utils/email');
+                        const { sendOrderEmail } = await import('./api/_utils/email');
                         await sendOrderEmail(order, env);
                       } catch (emailError) {
                         console.error('[Email Notification Error] Failed to send merchant notification:', emailError);
@@ -498,7 +498,7 @@ export default defineConfig(({ mode }) => {
                       });
 
                       try {
-                        const { sendContactFormEmail } = await import('./api/utils/email');
+                        const { sendContactFormEmail } = await import('./api/_utils/email');
                         await sendContactFormEmail(contactData, env);
                       } catch (emailError) {
                         console.error('[Email Notification Error] Failed to forward contact message:', emailError);

@@ -1,5 +1,5 @@
 import { MongoClient } from 'mongodb';
-import { sendContactFormEmail } from './utils/email';
+import { sendContactFormEmail } from '../_utils/email';
 
 const uri = process.env.MONGODB_URI || '';
 const client = new MongoClient(uri);

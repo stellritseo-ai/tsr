@@ -1,5 +1,5 @@
 import { MongoClient } from 'mongodb';
-import { sendOrderEmail, sendCustomerConfirmationEmail } from './utils/email';
+import { sendOrderEmail, sendCustomerConfirmationEmail } from '../_utils/email';
 
 const uri = process.env.MONGODB_URI || '';
 const client = new MongoClient(uri);
