@@ -37,7 +37,14 @@ function ProductsPage() {
       try {
         const data = await getProducts();
         if (data && Array.isArray(data) && data.length > 0) {
-          setLiveProducts(data as Product[]);
+          const resolved = data.map((p: any) => {
+            const staticMatch = products.find((sp) => sp.id === p.id);
+            if (staticMatch && (!p.image || p.image.startsWith('/src/assets/'))) {
+              return { ...p, image: staticMatch.image };
+            }
+            return p;
+          });
+          setLiveProducts(resolved as Product[]);
         }
       } catch (err) {
         console.error("Failed to load live products, falling back to static:", err);

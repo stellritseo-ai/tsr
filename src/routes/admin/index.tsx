@@ -145,8 +145,30 @@ function AdminDashboard() {
         getProducts(),
         getManualCustomers(),
       ]);
-      setOrders(fetchedOrders as Order[]);
-      setProducts(fetchedProducts as Product[]);
+
+      const resolvedProducts = (fetchedProducts as Product[]).map(p => {
+        const staticMatch = products.find(sp => sp.id === p.id);
+        if (staticMatch && (!p.image || p.image.startsWith('/src/assets/'))) {
+          return { ...p, image: staticMatch.image };
+        }
+        return p;
+      });
+
+      const resolvedOrders = (fetchedOrders as Order[]).map(o => {
+        return {
+          ...o,
+          items: o.items.map(item => {
+            const staticMatch = products.find(sp => sp.id === item.productId);
+            if (staticMatch && (!item.image || item.image.startsWith('/src/assets/'))) {
+              return { ...item, image: staticMatch.image };
+            }
+            return item;
+          })
+        };
+      });
+
+      setOrders(resolvedOrders);
+      setProducts(resolvedProducts);
       setManualCustomers(fetchedCustomers);
     } catch (e) {
       console.error("Failed to load admin panel data", e);
