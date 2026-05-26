@@ -22,7 +22,20 @@ import {
   changeAdminPassword
 } from "@/lib/serverFunctions";
 import { Order } from "@/types/order";
-import { Product } from "@/data/products";
+import { products as staticProducts, Product } from "@/data/products";
+
+import oilImg from "@/assets/product-growth-oil.jpg";
+import sprayImg from "@/assets/Hydrating-Spray.jpg";
+import butterImg from "@/assets/Hair-Butter-v2.jpg";
+import bundleImg from "@/assets/3-Step-Hair-Growth.jpg";
+import lotionImg from "@/assets/Rosemary.jpg";
+import aloeSheaImg from "@/assets/Aloe-Shea.jpg";
+import charcoalImg from "@/assets/Charcoal-Detox.jpg";
+import goatMilkImg from "@/assets/Goat-Milk.jpg";
+import soapBundleImg from "@/assets/3-shop.jpg";
+import menButterImg from "@/assets/Men’s-Repair-Hair.jpg";
+import menSprayImg from "@/assets/Leave-In-Hydrating.jpg";
+import menOilImg from "@/assets/Men’s-Bald-Spot.jpg";
 
 export const Route = createFileRoute("/admin/")({
   component: AdminDashboard,
@@ -32,18 +45,18 @@ export const Route = createFileRoute("/admin/")({
 });
 
 const PRESET_IMAGES = [
-  { name: "TSR™ Growth Oil", url: "/src/assets/product-growth-oil.jpg" },
-  { name: "TSR™ Hydrating Spray", url: "/src/assets/Hydrating-Spray.jpg" },
-  { name: "TSR™ Hair Butter", url: "/src/assets/Hair-Butter-v2.jpg" },
-  { name: "TSR™ 3-Step Bundle", url: "/src/assets/3-Step-Hair-Growth.jpg" },
-  { name: "TSR™ Rosemary Lotion", url: "/src/assets/Rosemary.jpg" },
-  { name: "TSR™ Aloe Shea Bar", url: "/src/assets/Aloe-Shea.jpg" },
-  { name: "TSR™ Charcoal Detox Bar", url: "/src/assets/Charcoal-Detox.jpg" },
-  { name: "TSR™ Goat Milk Honey Bar", url: "/src/assets/Goat-Milk.jpg" },
-  { name: "TSR™ 3 Soap Bundle", url: "/src/assets/3-shop.jpg" },
-  { name: "TSR™ Men's Repair Butter", url: "/src/assets/Men’s-Repair-Hair.jpg" },
-  { name: "TSR™ Leave-In Spray", url: "/src/assets/Leave-In-Hydrating.jpg" },
-  { name: "TSR™ Bald Spot Oil", url: "/src/assets/Men’s-Bald-Spot.jpg" },
+  { name: "TSR™ Growth Oil", url: oilImg },
+  { name: "TSR™ Hydrating Spray", url: sprayImg },
+  { name: "TSR™ Hair Butter", url: butterImg },
+  { name: "TSR™ 3-Step Bundle", url: bundleImg },
+  { name: "TSR™ Rosemary Lotion", url: lotionImg },
+  { name: "TSR™ Aloe Shea Bar", url: aloeSheaImg },
+  { name: "TSR™ Charcoal Detox Bar", url: charcoalImg },
+  { name: "TSR™ Goat Milk Honey Bar", url: goatMilkImg },
+  { name: "TSR™ 3 Soap Bundle", url: soapBundleImg },
+  { name: "TSR™ Men's Repair Butter", url: menButterImg },
+  { name: "TSR™ Leave-In Spray", url: menSprayImg },
+  { name: "TSR™ Bald Spot Oil", url: menOilImg },
 ];
 
 function AdminDashboard() {
@@ -147,7 +160,7 @@ function AdminDashboard() {
       ]);
 
       const resolvedProducts = (fetchedProducts as Product[]).map(p => {
-        const staticMatch = products.find(sp => sp.id === p.id);
+        const staticMatch = staticProducts.find(sp => sp.id === p.id);
         if (staticMatch && (!p.image || p.image.startsWith('/src/assets/'))) {
           return { ...p, image: staticMatch.image };
         }
@@ -158,7 +171,7 @@ function AdminDashboard() {
         return {
           ...o,
           items: o.items.map(item => {
-            const staticMatch = products.find(sp => sp.id === item.productId);
+            const staticMatch = staticProducts.find(sp => sp.id === item.productId);
             if (staticMatch && (!item.image || item.image.startsWith('/src/assets/'))) {
               return { ...item, image: staticMatch.image };
             }
