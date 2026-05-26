@@ -27,7 +27,7 @@ import { Product } from "@/data/products";
 export const Route = createFileRoute("/admin/")({
   component: AdminDashboard,
   head: () => ({
-    meta: [{ title: "Admin Portal | TSR Botanical Rituals" }],
+    meta: [{ title: "Admin Portal | TSR Botanical Store" }],
   }),
 });
 
@@ -571,7 +571,7 @@ function AdminDashboard() {
         <div className="max-w-md w-full glass bg-white/5 border border-white/10 rounded-[2.5rem] p-10 space-y-8 shadow-2xl relative z-10 animate-fade-up">
           <div className="text-center space-y-3">
             <span className="text-[10px] tracking-[0.45em] uppercase text-accent font-medium font-sans">Administrative Portal</span>
-            <h2 className="font-display text-4xl text-white">TSR<span className="text-accent text-gold font-serif">.</span> Rituals</h2>
+            <h2 className="font-display text-4xl text-white">TSR<span className="text-accent text-gold font-serif">.</span> Store</h2>
             <div className="h-px w-16 bg-white/20 mx-auto" />
             <p className="text-xs text-white/50 leading-relaxed font-sans font-medium">Verify your credentials to manage botanical recipes and checkouts.</p>
           </div>
