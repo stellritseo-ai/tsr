@@ -57,8 +57,8 @@ function ProductsPage() {
 
   const filteredProducts = useMemo(() => {
     return liveProducts.filter((p) => {
-      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           p.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = activeCategory === "all" || p.category === activeCategory;
       return matchesSearch && matchesCategory;
     });
@@ -110,11 +110,10 @@ function ProductsPage() {
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
-                  className={`px-6 py-2 rounded-full text-[10px] tracking-[0.2em] uppercase transition-all ${
-                    activeCategory === cat 
-                      ? "bg-ink text-white shadow-soft" 
+                  className={`px-6 py-2 rounded-full text-[10px] tracking-[0.2em] uppercase transition-all ${activeCategory === cat
+                      ? "bg-ink text-white shadow-soft"
                       : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
-                  }`}
+                    }`}
                 >
                   {cat}
                 </button>
@@ -123,7 +122,7 @@ function ProductsPage() {
 
             <div className="relative w-full md:w-72 group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground transition-colors group-focus-within:text-accent" />
-              <input 
+              <input
                 type="text"
                 placeholder="Search ritual..."
                 value={searchQuery}
@@ -146,7 +145,7 @@ function ProductsPage() {
                   <h3 className="font-display text-3xl">No rituals found</h3>
                   <p className="text-muted-foreground">Try adjusting your search or category filters.</p>
                 </div>
-                <button 
+                <button
                   onClick={() => { setSearchQuery(""); setActiveCategory("all"); }}
                   className="text-xs tracking-widest uppercase font-bold text-accent hover:text-ink transition underline underline-offset-8"
                 >
@@ -201,12 +200,12 @@ function ProductsPage() {
                         </div>
 
                         <div className="pt-8 flex items-center gap-6">
-                          <button 
+                          <button
                             onClick={() => handleAddToCart(product)}
                             className="bg-ink text-white px-10 py-5 rounded-full text-[10px] tracking-[0.4em] uppercase font-bold hover:bg-accent transition-all duration-500 shadow-luxe flex items-center gap-3"
                           >
                             <ShoppingBag className="size-4" />
-                            Add To Ritual
+                            Add To Cart
                           </button>
                         </div>
                       </div>
@@ -222,11 +221,11 @@ function ProductsPage() {
         <section className="py-32 px-6 bg-secondary/10">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between mb-16">
-              <h2 className="font-display text-4xl">Recommended Rituals</h2>
+              <h2 className="font-display text-4xl">Recommended Product</h2>
               <div className="h-px flex-1 mx-12 bg-border/40 hidden md:block" />
               <button className="text-[10px] tracking-[0.4em] uppercase font-bold text-accent">View All</button>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {liveProducts.slice(0, 3).map((p) => (
                 <div key={p.id} className="group space-y-6">
@@ -239,7 +238,7 @@ function ProductsPage() {
                       <span className="text-accent">${p.price}</span>
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2 italic font-serif">{p.description}</p>
-                    <button 
+                    <button
                       onClick={() => handleAddToCart(p)}
                       className="text-[10px] tracking-[0.3em] uppercase font-bold pt-4 hover:text-accent transition-colors flex items-center gap-2"
                     >
