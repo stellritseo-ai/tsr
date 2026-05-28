@@ -999,6 +999,16 @@ async function handleGetProducts(req: any, res: any) {
           image: "/src/assets/Goat-Milk.jpg"
         },
         {
+          id: "turmeric-glow-bar",
+          name: "TSR™ Turmeric Glow Bar",
+          price: 10.99,
+          category: "skin",
+          description: "A brightening bar infused with turmeric to help improve the appearance of uneven skin tone while enhancing your natural glow.",
+          ingredients: ["Turmeric", "Botanical Base", "Essential Oils"],
+          benefits: ["Brightens dull skin", "Helps even skin tone", "Promotes a radiant glow"],
+          image: "/src/assets/Turmeric-Glow.png"
+        },
+        {
           id: "soap-bundle",
           name: "TSR™ 3 Soap Bundle",
           price: 27.99,
@@ -1037,6 +1047,23 @@ async function handleGetProducts(req: any, res: any) {
           ingredients: ["Restorative Oils", "Botanical Extracts", "Biotin"],
           benefits: ["Nourishes scalp", "Supports fuller appearance", "Adds shine", "Lightweight oil care"],
           image: "/src/assets/Men’s-Bald-Spot.jpg"
+        },
+        {
+          id: "renew-mind-book",
+          name: "Renew Your Mind & Guard Your Heart",
+          price: 20.00,
+          category: "books",
+          description: "Renew Your Mind & Guard Your Heart is a faith-filled devotional written for anyone who has struggled with fear, emotional wounds, or overwhelming life circumstances. Through Scripture, reflection, and biblical principles, this book shows how applying God's Word daily can bring healing, peace, and lasting change.",
+          benefits: [
+            "Renewing your mind daily",
+            "Breaking strongholds and negative thinking",
+            "Emotional healing and forgiveness",
+            "Protecting your peace",
+            "Walking in the mind of Christ",
+            "Guarding your heart from fear and anxiety",
+            "Spiritual growth and transformation through God's Word"
+          ],
+          image: "/src/assets/Renew-Your-Mind-Book.png"
         }
       ];
       await db.collection("products").insertMany(initialProducts);

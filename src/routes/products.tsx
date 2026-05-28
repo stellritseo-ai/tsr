@@ -53,7 +53,7 @@ function ProductsPage() {
     fetchLiveProducts();
   }, []);
 
-  const categories = ["all", "hair", "skin", "bundles", "men"];
+  const categories = ["all", "hair", "skin", "bundles", "men", "books"];
 
   const filteredProducts = useMemo(() => {
     return liveProducts.filter((p) => {

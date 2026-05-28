@@ -902,6 +902,7 @@ function AdminDashboard() {
                                   <span className={`size-2.5 rounded-full ${
                                     cat === "hair" ? "bg-amber-600" :
                                     cat === "skin" ? "bg-indigo-600" :
+                                    cat === "books" ? "bg-purple-600" :
                                     cat === "bundles" ? "bg-gold bg-gold text-yellow-600 bg-yellow-600" : "bg-emerald-600"
                                   }`} />
                                   {cat}
@@ -913,6 +914,7 @@ function AdminDashboard() {
                                   className={`h-full rounded-full transition-all duration-1000 ${
                                     cat === "hair" ? "bg-amber-600" :
                                     cat === "skin" ? "bg-indigo-600" :
+                                    cat === "books" ? "bg-purple-600" :
                                     cat === "bundles" ? "bg-gold bg-yellow-600" : "bg-emerald-600"
                                   }`}
                                   style={{ width: `${percentage}%` }}
@@ -1101,7 +1103,7 @@ function AdminDashboard() {
               {activeTab === "products" && (
                 <div className="space-y-6 animate-fade-up">
                   <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-                    {["all", "hair", "skin", "bundles", "men"].map((cat) => (
+                    {["all", "hair", "skin", "bundles", "men", "books"].map((cat) => (
                       <button
                         key={cat}
                         onClick={() => setCategoryFilter(cat)}
@@ -1586,6 +1588,7 @@ function AdminDashboard() {
                     <option value="skin">Skin Care</option>
                     <option value="bundles">Ritual Bundles</option>
                     <option value="men">Men's Care</option>
+                    <option value="books">Books</option>
                   </select>
                 </div>
               </div>
@@ -1732,6 +1735,7 @@ function AdminDashboard() {
                     <option value="skin">Skin Care</option>
                     <option value="bundles">Ritual Bundles</option>
                     <option value="men">Men's Care</option>
+                    <option value="books">Books</option>
                   </select>
                 </div>
               </div>

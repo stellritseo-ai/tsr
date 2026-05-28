@@ -10,6 +10,9 @@ import menButterImg from "@/assets/Men’s-Repair-Hair.jpg";
 import soapBundleImg from "@/assets/3-shop.jpg";
 import menSprayImg from "@/assets/Leave-In-Hydrating.jpg";
 import menOilImg from "@/assets/Men’s-Bald-Spot.jpg";
+import turmericImg from "@/assets/Turmeric-Glow.png";
+import bookImg from "@/assets/Renew-Your-Mind-Book.png";
+
 
 export interface Product {
   id: string;
@@ -20,7 +23,7 @@ export interface Product {
   includes?: string[];
   benefits: string[];
   image: string;
-  category: "hair" | "skin" | "bundles" | "men";
+  category: "hair" | "skin" | "bundles" | "men" | "books";
   featured?: boolean;
 }
 
@@ -106,6 +109,16 @@ export const products: Product[] = [
     image: ingredientsImg,
   },
   {
+    id: "turmeric-glow-bar",
+    name: "TSR™ Turmeric Glow Bar",
+    price: 10.99,
+    category: "skin",
+    description: "A brightening bar infused with turmeric to help improve the appearance of uneven skin tone while enhancing your natural glow.",
+    ingredients: ["Turmeric", "Botanical Base", "Essential Oils"],
+    benefits: ["Brightens dull skin", "Helps even skin tone", "Promotes a radiant glow"],
+    image: turmericImg,
+  },
+  {
     id: "soap-bundle",
     name: "TSR™ 3 Soap Bundle",
     price: 27.99,
@@ -156,12 +169,21 @@ export const products: Product[] = [
     image: bundleImg,
   },
   {
-    id: "dummy-product",
-    name: "dummy Product",
-    price: 2.00,
-    category: "hair",
-    description: "A dummy product for testing checkout flows and payment methods.",
-    benefits: ["Testing Stripe integration", "Quick checkout"],
-    image: oilImg,
-  }
+    id: "renew-mind-book",
+    name: "Renew Your Mind & Guard Your Heart",
+    price: 20.00,
+    category: "books",
+    description: "Renew Your Mind & Guard Your Heart is a faith-filled devotional written for anyone who has struggled with fear, emotional wounds, or overwhelming life circumstances. Through Scripture, reflection, and biblical principles, this book shows how applying God's Word daily can bring healing, peace, and lasting change.",
+    benefits: [
+      "Renewing your mind daily",
+      "Breaking strongholds and negative thinking",
+      "Emotional healing and forgiveness",
+      "Protecting your peace",
+      "Walking in the mind of Christ",
+      "Guarding your heart from fear and anxiety",
+      "Spiritual growth and transformation through God's Word"
+    ],
+    image: bookImg,
+  },
+
 ];
