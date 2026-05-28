@@ -51,7 +51,7 @@ export function Footer() {
         </div>
 
         <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-6 text-xs opacity-70">
-          <div>© {new Date().getFullYear()} TSR Skin and Hair Care. All rights reserved.</div>
+          <div>© {new Date().getFullYear()} TSR Skin and Hair Care. All rights reserved. Design By <a href="https://stellrit.com" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-white transition">StellR IT LLC</a></div>
           <div className="flex items-center gap-5">
             <a href="#" aria-label="Instagram"><Instagram className="size-4 hover:opacity-100 opacity-70 transition" /></a>
             <a href="#" aria-label="Twitter"><Twitter className="size-4 hover:opacity-100 opacity-70 transition" /></a>
