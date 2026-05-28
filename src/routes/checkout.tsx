@@ -19,6 +19,8 @@ function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const total = state.items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const totalOriginal = state.items.reduce((s, i) => s + (i.originalPrice || i.price) * i.quantity, 0);
+  const savings = totalOriginal - total;
   const grandTotal = total; // Free shipping always
 
   const [formData, setFormData] = useState({
@@ -234,12 +236,34 @@ function CheckoutPage() {
                       <div className="text-sm font-display">{item.name}</div>
                       <div className="text-[10px] tracking-widest uppercase text-muted-foreground">{item.category}</div>
                     </div>
-                    <div className="text-sm font-medium">${(item.price * item.quantity).toFixed(2)}</div>
+                    <div className="text-right shrink-0 space-y-0.5">
+                      {item.originalPrice ? (
+                        <>
+                          <div className="text-xs line-through text-muted-foreground/60">${(item.originalPrice * item.quantity).toFixed(2)}</div>
+                          <div className="text-sm font-bold text-gold">${(item.price * item.quantity).toFixed(2)}</div>
+                          <div className="text-[8px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded uppercase tracking-wider inline-block">50% Off</div>
+                        </>
+                      ) : (
+                        <div className="text-sm font-medium">${(item.price * item.quantity).toFixed(2)}</div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
 
               <div className="space-y-4 pt-6 border-t border-border/40">
+                {savings > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Original Subtotal</span>
+                    <span className="line-through text-muted-foreground/60">${totalOriginal.toFixed(2)}</span>
+                  </div>
+                )}
+                {savings > 0 && (
+                  <div className="flex justify-between text-sm text-emerald-600 font-bold bg-emerald-50/50 px-3 py-2 rounded-xl">
+                    <span>Discount Savings (50% Off)</span>
+                    <span>-${savings.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span>${total.toFixed(2)}</span>
