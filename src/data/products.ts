@@ -11,7 +11,7 @@ import soapBundleImg from "@/assets/3-shop.jpg";
 import menSprayImg from "@/assets/Leave-In-Hydrating.jpg";
 import menOilImg from "@/assets/Men’s-Bald-Spot.jpg";
 import turmericImg from "@/assets/Turmeric-Glow.png";
-import bookImg from "@/assets/Renew-Your-Mind-Book.png";
+import bookImg from "@/assets/books.png";
 
 
 export interface Product {

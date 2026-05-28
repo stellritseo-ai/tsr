@@ -161,10 +161,20 @@ function AdminDashboard() {
 
       const resolvedProducts = (fetchedProducts as Product[]).map(p => {
         const staticMatch = staticProducts.find(sp => sp.id === p.id);
-        if (staticMatch && (!p.image || p.image.startsWith('/src/assets/'))) {
-          return { ...p, image: staticMatch.image };
+        const resolvedImg = staticMatch && (!p.image || p.image.startsWith('/src/assets/')) ? staticMatch.image : p.image;
+        const isBook = p.category === 'books';
+        if (p.price >= 20 && !isBook) {
+          return {
+            ...p,
+            image: resolvedImg,
+            originalPrice: p.price,
+            price: Math.round((p.price * 0.5) * 100) / 100
+          };
         }
-        return p;
+        return {
+          ...p,
+          image: resolvedImg
+        };
       });
 
       const resolvedOrders = (fetchedOrders as Order[]).map(o => {
@@ -418,7 +428,7 @@ function AdminDashboard() {
     setProductForm({
       id: product.id,
       name: product.name,
-      price: product.price,
+      price: product.originalPrice || product.price,
       category: product.category,
       description: product.description || "",
       ingredients: (product.ingredients || []).join(", "),
@@ -1151,7 +1161,15 @@ function AdminDashboard() {
                             <div className="space-y-2">
                               <div className="flex justify-between items-start gap-4">
                                 <h4 className="font-display text-lg group-hover:text-gold transition-colors">{product.name}</h4>
-                                <span className="font-display font-bold text-accent text-gold text-lg">${product.price.toFixed(2)}</span>
+                                 {product.originalPrice ? (
+                                   <span className="font-display font-bold text-accent text-lg flex items-center gap-1.5 flex-wrap justify-end">
+                                     <span className="line-through text-muted-foreground/60 text-xs font-light">${product.originalPrice.toFixed(2)}</span>
+                                     <span className="text-gold">${product.price.toFixed(2)}</span>
+                                     <span className="text-[8px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">50% Off</span>
+                                   </span>
+                                 ) : (
+                                   <span className="font-display font-bold text-accent text-gold text-lg">${product.price.toFixed(2)}</span>
+                                 )}
                               </div>
                               <p className="text-xs text-muted-foreground line-clamp-2 italic font-serif leading-relaxed">
                                 {product.description || "No botanical notes declared."}

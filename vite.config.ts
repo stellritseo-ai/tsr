@@ -218,19 +218,8 @@ export default defineConfig(({ mode }) => {
                       await db.collection("products").insertMany(initialProducts);
                       productsList = initialProducts;
                     }
-                    const mappedProducts = productsList.map((product: any) => {
-                      const isBook = product.category === 'books';
-                      if (product.price >= 20 && !isBook) {
-                        return {
-                          ...product,
-                          originalPrice: product.price,
-                          price: Math.round((product.price * 0.5) * 100) / 100
-                        };
-                      }
-                      return product;
-                    });
                     res.setHeader('Content-Type', 'application/json');
-                    res.end(JSON.stringify(mappedProducts));
+                    res.end(JSON.stringify(productsList));
                   } catch (err: any) {
                     res.statusCode = 500;
                     res.end(JSON.stringify({ success: false, error: err.message }));

@@ -1048,18 +1048,7 @@ async function handleGetProducts(req: any, res: any) {
       await db.collection("products").insertMany(initialProducts);
       productsList = initialProducts;
     }
-    const mappedProducts = productsList.map((product: any) => {
-      const isBook = product.category === 'books';
-      if (product.price >= 20 && !isBook) {
-        return {
-          ...product,
-          originalPrice: product.price,
-          price: Math.round((product.price * 0.5) * 100) / 100
-        };
-      }
-      return product;
-    });
-    res.status(200).json(mappedProducts);
+    res.status(200).json(productsList);
   } catch (e: any) {
     res.status(500).json({ success: false, error: e.message });
   }

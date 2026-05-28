@@ -39,10 +39,20 @@ function ProductsPage() {
         if (data && Array.isArray(data) && data.length > 0) {
           const resolved = data.map((p: any) => {
             const staticMatch = products.find((sp) => sp.id === p.id);
-            if (staticMatch && (!p.image || p.image.startsWith('/src/assets/'))) {
-              return { ...p, image: staticMatch.image };
+            const resolvedImg = staticMatch && (!p.image || p.image.startsWith('/src/assets/')) ? staticMatch.image : p.image;
+            const isBook = p.category === 'books';
+            if (p.price >= 20 && !isBook) {
+              return {
+                ...p,
+                image: resolvedImg,
+                originalPrice: p.price,
+                price: Math.round((p.price * 0.5) * 100) / 100
+              };
             }
-            return p;
+            return {
+              ...p,
+              image: resolvedImg
+            };
           });
           setLiveProducts(resolved as Product[]);
         }
@@ -53,7 +63,7 @@ function ProductsPage() {
     fetchLiveProducts();
   }, []);
 
-  const categories = ["all", "hair", "skin", "bundles", "men"];
+  const categories = ["all", "hair", "skin", "bundles", "men", "books"];
 
   const filteredProducts = useMemo(() => {
     return liveProducts.filter((p) => {
