@@ -7,7 +7,7 @@ import { ArrowRight, Leaf, Shield, Heart, Sparkles, Droplets, Wind, Star } from 
 
 // Images
 import heroImg from "@/assets/probg.jpg";
-import founderImg from "@/assets/founder.png";
+import founderImg from "@/assets/books.png";
 import ingredientsImg from "@/assets/ingredients-comp.png";
 import experienceImg from "@/assets/experience.png";
 
