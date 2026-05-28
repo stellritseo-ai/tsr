@@ -11,7 +11,16 @@ const products = [
   { id: "spray", name: "Hydrating Spray", price: 24, img: spray, ingredients: "Aloe · Rose Water · Vit. E", rating: 4.8, tag: "New", category: "hair" },
   { id: "butter", name: "Hair Butter", price: 32, img: butter, ingredients: "Shea · Avocado · Mango", rating: 4.9, tag: "Restock", category: "hair" },
   { id: "aloe-bar", name: "Aloe Shea Bar", price: 18, img: soap, ingredients: "Aloe · Shea · Olive", rating: 4.7, tag: "Editor's Pick", category: "skin" },
-];
+].map(p => {
+  if (p.price >= 20) {
+    return {
+      ...p,
+      originalPrice: p.price,
+      price: Math.round((p.price * 0.5) * 100) / 100
+    };
+  }
+  return p;
+});
 
 export function Products({ onAddToCart }: { onAddToCart?: () => void } = {}) {
   const { addItem } = useCart();
@@ -70,7 +79,14 @@ export function Products({ onAddToCart }: { onAddToCart?: () => void } = {}) {
               <div className="p-6">
                 <div className="flex items-center justify-between gap-4">
                   <h3 className="font-display text-2xl">{p.name}</h3>
-                  <span className="text-base">${p.price}</span>
+                  {p.originalPrice ? (
+                    <div className="text-right">
+                      <span className="text-xs line-through text-muted-foreground/60 mr-2">${p.originalPrice.toFixed(2)}</span>
+                      <span className="text-base font-bold text-gold">${p.price.toFixed(2)}</span>
+                    </div>
+                  ) : (
+                    <span className="text-base">${p.price}</span>
+                  )}
                 </div>
                 <p className="mt-1.5 text-xs text-muted-foreground tracking-wide">{p.ingredients}</p>
                 <div className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">

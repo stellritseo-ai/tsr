@@ -16,7 +16,7 @@ export function Footer() {
               Botanical skin and hair rituals, slowly handcrafted in small batches.
               Made for those who treat self‑care as art.
             </p>
-            <form
+            {/* <form
               onSubmit={(e) => e.preventDefault()}
               className="mt-8 flex max-w-md rounded-full border border-white/15 overflow-hidden"
             >
@@ -28,7 +28,7 @@ export function Footer() {
               <button className="px-5 text-sm tracking-widest uppercase bg-[oklch(0.88_0.04_75)] text-ink hover:bg-white transition">
                 Join
               </button>
-            </form>
+            </form> */}
           </div>
 
           {cols.map((c) => (
@@ -45,7 +45,7 @@ export function Footer() {
           <div className="lg:col-span-1">
             <div className="text-xs tracking-[0.3em] uppercase opacity-60">Studio</div>
             <p className="mt-5 text-sm opacity-80 leading-relaxed">
-              Orlando, FL 32835<br />hello@tsrbeauty.co
+              Orlando, FL 32835<br />tsrskinandhair@gmail.com
             </p>
           </div>
         </div>

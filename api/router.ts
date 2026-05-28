@@ -77,25 +77,22 @@ function generateOrderEmailHtml(order: Order): string {
         <td style="padding: 20px 0; vertical-align: top;">
           <table cellpadding="0" cellspacing="0" style="border-collapse: collapse; width: 100%;">
             <tr>
-              ${
-                item.image
-                  ? `<td style="padding-right: 20px; vertical-align: top; width: 80px;">
+              ${item.image
+          ? `<td style="padding-right: 20px; vertical-align: top; width: 80px;">
                       <img src="${item.image}" alt="${item.name}" width="72" height="72" style="border-radius: 10px; object-fit: cover; border: 1px solid #EAE6DF; display: block;" />
                      </td>`
-                  : ''
-              }
+          : ''
+        }
               <td style="vertical-align: top;">
                 <div style="font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #C5A880; margin-bottom: 4px;">Product Name</div>
-                ${
-                  item.link
-                    ? `<a href="${item.link}" style="font-family: 'Playfair Display', Georgia, serif; font-size: 16px; font-weight: 600; color: #1C1B19; text-decoration: underline; text-underline-offset: 3px;">${item.name}</a>`
-                    : `<div style="font-family: 'Playfair Display', Georgia, serif; font-size: 16px; font-weight: 600; color: #1C1B19;">${item.name}</div>`
-                }
-                ${
-                  item.link
-                    ? `<div style="margin-top: 4px;"><a href="${item.link}" style="font-family: 'Inter', sans-serif; font-size: 11px; color: #8A857C; text-decoration: none;">View Product →</a></div>`
-                    : ''
-                }
+                ${item.link
+          ? `<a href="${item.link}" style="font-family: 'Playfair Display', Georgia, serif; font-size: 16px; font-weight: 600; color: #1C1B19; text-decoration: underline; text-underline-offset: 3px;">${item.name}</a>`
+          : `<div style="font-family: 'Playfair Display', Georgia, serif; font-size: 16px; font-weight: 600; color: #1C1B19;">${item.name}</div>`
+        }
+                ${item.link
+          ? `<div style="margin-top: 4px;"><a href="${item.link}" style="font-family: 'Inter', sans-serif; font-size: 11px; color: #8A857C; text-decoration: none;">View Product →</a></div>`
+          : ''
+        }
                 <div style="font-family: 'Inter', sans-serif; font-size: 11px; letter-spacing: 0.08em; color: #8A857C; margin-top: 6px;">Qty: ${item.quantity} &nbsp;·&nbsp; $${item.price.toFixed(2)} each</div>
               </td>
             </tr>
@@ -293,13 +290,12 @@ function generateCustomerConfirmationEmailHtml(order: Order): string {
         <td style="padding: 18px 0; vertical-align: top;">
           <table cellpadding="0" cellspacing="0" style="border-collapse: collapse; width: 100%;">
             <tr>
-              ${
-                item.image
-                  ? `<td style="padding-right: 16px; vertical-align: top; width: 72px;">
+              ${item.image
+          ? `<td style="padding-right: 16px; vertical-align: top; width: 72px;">
                       <img src="${item.image}" alt="${item.name}" width="64" height="64" style="border-radius: 10px; object-fit: cover; border: 1px solid #EAE6DF; display: block;" />
                      </td>`
-                  : ''
-              }
+          : ''
+        }
               <td style="vertical-align: top;">
                 <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 15px; font-weight: 600; color: #1C1B19; margin-bottom: 4px;">${item.name}</div>
                 <div style="font-family: 'Inter', sans-serif; font-size: 12px; color: #8A857C;">Qty: ${item.quantity} &nbsp;·&nbsp; $${item.price.toFixed(2)} each</div>
@@ -474,7 +470,7 @@ export async function sendCustomerConfirmationEmail(order: Order, envOverrides?:
     return (envOverrides && envOverrides[key]) || process.env[key] || '';
   };
 
-  const resendApiKey  = getEnv('RESEND_API_KEY');
+  const resendApiKey = getEnv('RESEND_API_KEY');
   const customerEmail = order.email;
 
   if (!customerEmail) {
@@ -483,7 +479,7 @@ export async function sendCustomerConfirmationEmail(order: Order, envOverrides?:
   }
 
   const subject = `✅ Order Confirmed — ${order.id} | TSR Skin & Hair Care`;
-  const html    = generateCustomerConfirmationEmailHtml(order);
+  const html = generateCustomerConfirmationEmailHtml(order);
 
   console.log(`\n📧 [TSR Email] Sending customer confirmation for order ${order.id} → ${customerEmail}`);
 
@@ -499,7 +495,7 @@ export async function sendCustomerConfirmationEmail(order: Order, envOverrides?:
         },
         body: JSON.stringify({
           from: fromEmail,
-          to:   customerEmail,
+          to: customerEmail,
           subject,
           html,
         }),
@@ -526,15 +522,15 @@ export async function sendCustomerConfirmationEmail(order: Order, envOverrides?:
   if (smtpHost && smtpUser && smtpPass) {
     try {
       const transporter = nodemailer.createTransport({
-        host:   smtpHost,
-        port:   smtpPort,
+        host: smtpHost,
+        port: smtpPort,
         secure: smtpPort === 465,
         auth: { user: smtpUser, pass: smtpPass },
       });
 
       const info = await transporter.sendMail({
-        from:    smtpFrom,
-        to:      customerEmail,
+        from: smtpFrom,
+        to: customerEmail,
         subject,
         html,
       });
@@ -549,16 +545,16 @@ export async function sendCustomerConfirmationEmail(order: Order, envOverrides?:
   // ─── Transport 3: Ethereal (dev fallback) ────────────────────────────────
   try {
     const testAccount = await nodemailer.createTestAccount();
-    const transporter  = nodemailer.createTransport({
-      host:   'smtp.ethereal.email',
-      port:   587,
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
       secure: false,
       auth: { user: testAccount.user, pass: testAccount.pass },
     });
 
     const info = await transporter.sendMail({
-      from:    `"TSR Skin & Hair Care" <${testAccount.user}>`,
-      to:      customerEmail,
+      from: `"TSR Skin & Hair Care" <${testAccount.user}>`,
+      to: customerEmail,
       subject,
       html,
     } as any);
@@ -582,10 +578,10 @@ export async function sendOrderEmail(order: Order, envOverrides?: Record<string,
   };
 
   const merchantEmail = getEnv('MERCHANT_EMAIL') || 'tsrskinandhair@gmail.com';
-  const resendApiKey  = getEnv('RESEND_API_KEY');
+  const resendApiKey = getEnv('RESEND_API_KEY');
 
   const subject = `✨ New Ritual Order ${order.id} Placed — $${order.total.toFixed(2)}`;
-  const html    = generateOrderEmailHtml(order);
+  const html = generateOrderEmailHtml(order);
 
   console.log(`\n📧 [TSR Email] Preparing notification for order ${order.id} → ${merchantEmail}`);
 
@@ -604,7 +600,7 @@ export async function sendOrderEmail(order: Order, envOverrides?: Record<string,
         },
         body: JSON.stringify({
           from: fromEmail,
-          to:   merchantEmail,
+          to: merchantEmail,
           subject,
           html,
         }),
@@ -631,7 +627,7 @@ export async function sendOrderEmail(order: Order, envOverrides?: Record<string,
           },
           body: JSON.stringify({
             from: fromEmail,
-            to:   order.email,
+            to: order.email,
             subject: customerSubject,
             html: customerHtml,
           }),
@@ -662,8 +658,8 @@ export async function sendOrderEmail(order: Order, envOverrides?: Record<string,
     console.log(`[TSR Email] Sending via SMTP (${smtpHost}:${smtpPort})...`);
     try {
       const transporter = nodemailer.createTransport({
-        host:   smtpHost,
-        port:   smtpPort,
+        host: smtpHost,
+        port: smtpPort,
         secure: smtpPort === 465,
         auth: {
           user: smtpUser,
@@ -672,8 +668,8 @@ export async function sendOrderEmail(order: Order, envOverrides?: Record<string,
       });
 
       const info = await transporter.sendMail({
-        from:    smtpFrom,
-        to:      merchantEmail,
+        from: smtpFrom,
+        to: merchantEmail,
         subject,
         html,
       });
@@ -689,9 +685,9 @@ export async function sendOrderEmail(order: Order, envOverrides?: Record<string,
   console.log('[TSR Email] No production transport configured — using Ethereal preview (dev mode)...');
   try {
     const testAccount = await nodemailer.createTestAccount();
-    const transporter  = nodemailer.createTransport({
-      host:   'smtp.ethereal.email',
-      port:   587,
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
       secure: false,
       auth: {
         user: testAccount.user,
@@ -700,8 +696,8 @@ export async function sendOrderEmail(order: Order, envOverrides?: Record<string,
     });
 
     const info = await transporter.sendMail({
-      from:    `"TSR Skin & Hair Care" <${testAccount.user}>`,
-      to:      merchantEmail,
+      from: `"TSR Skin & Hair Care" <${testAccount.user}>`,
+      to: merchantEmail,
       subject,
       html,
     });
@@ -812,10 +808,10 @@ export async function sendContactFormEmail(contactData: any, envOverrides?: Reco
   };
 
   const merchantEmail = getEnv('MERCHANT_EMAIL') || 'tsrskinandhair@gmail.com';
-  const resendApiKey  = getEnv('RESEND_API_KEY');
+  const resendApiKey = getEnv('RESEND_API_KEY');
 
   const subject = `📩 New TSR Message from ${contactData.name}: ${contactData.subject || 'General'}`;
-  const html    = generateContactEmailHtml(contactData);
+  const html = generateContactEmailHtml(contactData);
 
   console.log(`\n📧 [TSR Contact Email] Preparing message notification → ${merchantEmail}`);
 
@@ -831,7 +827,7 @@ export async function sendContactFormEmail(contactData: any, envOverrides?: Reco
         },
         body: JSON.stringify({
           from: fromEmail,
-          to:   merchantEmail,
+          to: merchantEmail,
           subject,
           html,
         }),
@@ -856,15 +852,15 @@ export async function sendContactFormEmail(contactData: any, envOverrides?: Reco
   if (smtpHost && smtpUser && smtpPass) {
     try {
       const transporter = nodemailer.createTransport({
-        host:   smtpHost,
-        port:   smtpPort,
+        host: smtpHost,
+        port: smtpPort,
         secure: smtpPort === 465,
         auth: { user: smtpUser, pass: smtpPass },
       });
 
       await transporter.sendMail({
-        from:    smtpFrom,
-        to:      merchantEmail,
+        from: smtpFrom,
+        to: merchantEmail,
         subject,
         html,
       });
@@ -879,16 +875,16 @@ export async function sendContactFormEmail(contactData: any, envOverrides?: Reco
   // Ethereal Dev Preview Fallback
   try {
     const testAccount = await nodemailer.createTestAccount();
-    const transporter  = nodemailer.createTransport({
-      host:   'smtp.ethereal.email',
-      port:   587,
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
       secure: false,
       auth: { user: testAccount.user, pass: testAccount.pass },
     });
 
     const info = await transporter.sendMail({
-      from:    `"TSR Skin & Hair Care" <${testAccount.user}>`,
-      to:      merchantEmail,
+      from: `"TSR Skin & Hair Care" <${testAccount.user}>`,
+      to: merchantEmail,
       subject,
       html,
     });
@@ -1047,29 +1043,23 @@ async function handleGetProducts(req: any, res: any) {
           ingredients: ["Restorative Oils", "Botanical Extracts", "Biotin"],
           benefits: ["Nourishes scalp", "Supports fuller appearance", "Adds shine", "Lightweight oil care"],
           image: "/src/assets/Men’s-Bald-Spot.jpg"
-        },
-        {
-          id: "renew-mind-book",
-          name: "Renew Your Mind & Guard Your Heart",
-          price: 20.00,
-          category: "books",
-          description: "Renew Your Mind & Guard Your Heart is a faith-filled devotional written for anyone who has struggled with fear, emotional wounds, or overwhelming life circumstances. Through Scripture, reflection, and biblical principles, this book shows how applying God's Word daily can bring healing, peace, and lasting change.",
-          benefits: [
-            "Renewing your mind daily",
-            "Breaking strongholds and negative thinking",
-            "Emotional healing and forgiveness",
-            "Protecting your peace",
-            "Walking in the mind of Christ",
-            "Guarding your heart from fear and anxiety",
-            "Spiritual growth and transformation through God's Word"
-          ],
-          image: "/src/assets/Renew-Your-Mind-Book.png"
         }
       ];
       await db.collection("products").insertMany(initialProducts);
       productsList = initialProducts;
     }
-    res.status(200).json(productsList);
+    const mappedProducts = productsList.map((product: any) => {
+      const isBook = product.category === 'books';
+      if (product.price >= 20 && !isBook) {
+        return {
+          ...product,
+          originalPrice: product.price,
+          price: Math.round((product.price * 0.5) * 100) / 100
+        };
+      }
+      return product;
+    });
+    res.status(200).json(mappedProducts);
   } catch (e: any) {
     res.status(500).json({ success: false, error: e.message });
   }
@@ -1205,8 +1195,8 @@ async function handleCreateCheckoutSession(req: any, res: any) {
     });
 
     const lineItems = items.map((item: any) => {
-      const validImage = item.image && item.image.startsWith('http') && !item.image.includes('localhost') 
-        ? [item.image] 
+      const validImage = item.image && item.image.startsWith('http') && !item.image.includes('localhost')
+        ? [item.image]
         : undefined;
 
       return {
@@ -1273,7 +1263,7 @@ async function handleAdminLogin(req: any, res: any) {
   try {
     const { db } = await connectToDatabase();
     const { username, password } = req.body;
-    
+
     let user = await db.collection("admin_user").findOne({ username });
     if (!user) {
       const count = await db.collection("admin_user").countDocuments();
@@ -1320,7 +1310,7 @@ async function handleAdminChangePassword(req: any, res: any) {
   try {
     const { db } = await connectToDatabase();
     const { currentPassword, newPassword } = req.body;
-    
+
     const user = await db.collection("admin_user").findOne({ username: 'tsr_admin' });
     const hashedDefault = hashPassword('tsr123456');
     const finalUser = user || { password: hashedDefault };
@@ -1354,7 +1344,7 @@ async function handleAdminChangePassword(req: any, res: any) {
 export default async function handler(req: any, res: any) {
   // Parse Vercel system header containing the original matched path before the rewrite
   const matchedPath = req.headers['x-matched-path'] as string;
-  
+
   let pathname = '';
   if (matchedPath) {
     pathname = url.parse(matchedPath).pathname || '';

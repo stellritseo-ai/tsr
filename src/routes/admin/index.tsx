@@ -1,20 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
-import { 
-  Package, Users, ShoppingCart, TrendingUp, 
-  Search, Filter, ExternalLink, Clock, CheckCircle2, 
-  AlertCircle, ChevronRight, BarChart3, Plus, Edit2, 
-  Trash2, X, PlusCircle, UserCheck, DollarSign, Calendar, MapPin, 
+import {
+  Package, Users, ShoppingCart, TrendingUp,
+  Search, Filter, ExternalLink, Clock, CheckCircle2,
+  AlertCircle, ChevronRight, BarChart3, Plus, Edit2,
+  Trash2, X, PlusCircle, UserCheck, DollarSign, Calendar, MapPin,
   Phone, Mail, ArrowRight, ArrowUpRight, Award, FileText, Settings, Sparkles, Loader2,
   Lock, User, LogOut, ShieldCheck, KeyRound
 } from "lucide-react";
 
-import { 
-  getOrders, 
-  updateOrderStatus, 
-  getProducts, 
-  createProduct, 
-  updateProduct, 
+import {
+  getOrders,
+  updateOrderStatus,
+  getProducts,
+  createProduct,
+  updateProduct,
   deleteProduct,
   getManualCustomers,
   createManualCustomer,
@@ -70,7 +70,7 @@ function AdminDashboard() {
 
   // Tab control
   const [activeTab, setActiveTab] = useState("dashboard");
-  
+
   // Database datasets state
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -85,7 +85,7 @@ function AdminDashboard() {
   // Selection states for Drawers & Modals
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
-  
+
   // Modals state
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [showEditProductModal, setShowEditProductModal] = useState<Product | null>(null);
@@ -522,7 +522,7 @@ function AdminDashboard() {
   // FILTERED LISTINGS
   const filteredOrdersList = useMemo(() => {
     return orders.filter(o => {
-      const matchesSearch = 
+      const matchesSearch =
         o.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         o.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         o.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -533,8 +533,8 @@ function AdminDashboard() {
 
   const filteredProductsList = useMemo(() => {
     return products.filter(p => {
-      const matchesSearch = 
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      const matchesSearch =
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (p.description || "").toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = categoryFilter === "all" || p.category === categoryFilter;
       return matchesSearch && matchesCategory;
@@ -542,7 +542,7 @@ function AdminDashboard() {
   }, [products, searchTerm, categoryFilter]);
 
   const filteredCustomersList = useMemo(() => {
-    return derivedCustomers.filter(c => 
+    return derivedCustomers.filter(c =>
       c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.city.toLowerCase().includes(searchTerm.toLowerCase())
@@ -576,7 +576,7 @@ function AdminDashboard() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-ink flex items-center justify-center p-6 relative overflow-hidden font-serif selection:bg-accent/20">
-        
+
         {/* Abstract Luxury Background Blurs */}
         <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[120px] -translate-x-1/3 -translate-y-1/3" />
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-gold/5 rounded-full blur-[120px] translate-x-1/3 translate-y-1/3" />
@@ -590,7 +590,7 @@ function AdminDashboard() {
           </div>
 
           <form onSubmit={handleLoginSubmit} className="space-y-5 font-sans">
-            
+
             {loginError && (
               <div className="bg-rose-500/10 border border-rose-500/25 rounded-2xl p-4 flex gap-3 text-rose-300 text-xs items-center leading-relaxed">
                 <AlertCircle className="size-4 shrink-0" />
@@ -602,8 +602,8 @@ function AdminDashboard() {
               <label className="text-[9px] tracking-wider uppercase font-bold text-white/40">Username Credentials</label>
               <div className="relative group">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-white/40 group-focus-within:text-gold transition-colors" />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="tsr_admin"
                   value={loginUsername}
                   onChange={(e) => setLoginUsername(e.target.value)}
@@ -617,8 +617,8 @@ function AdminDashboard() {
               <label className="text-[9px] tracking-wider uppercase font-bold text-white/40">Administrative Security Password</label>
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-white/40 group-focus-within:text-gold transition-colors" />
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   placeholder="••••••••"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
@@ -628,7 +628,7 @@ function AdminDashboard() {
               </div>
             </div>
 
-            <button 
+            <button
               type="submit"
               disabled={loginLoading}
               className="w-full bg-white text-ink hover:bg-gold hover:text-white py-4 rounded-full text-[10px] tracking-widest uppercase font-bold transition-all shadow-xl flex items-center justify-center gap-2 cursor-pointer pt-4.5"
@@ -652,15 +652,13 @@ function AdminDashboard() {
   // ─── RENDERING AUTHORIZED DASHBOARD WORKSPACE ───────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#FDFCF9] text-ink selection:bg-accent/20">
-      
+
       {/* ELEVENTH TOAST SYSTEM */}
       {toast && (
-        <div className={`fixed bottom-8 right-8 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border transition-all duration-300 transform translate-y-0 animate-bounce bg-white ${
-          toast.type === "success" ? "border-emerald-200" : "border-rose-200"
-        }`}>
-          <div className={`size-8 rounded-full flex items-center justify-center ${
-            toast.type === "success" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+        <div className={`fixed bottom-8 right-8 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border transition-all duration-300 transform translate-y-0 animate-bounce bg-white ${toast.type === "success" ? "border-emerald-200" : "border-rose-200"
           }`}>
+          <div className={`size-8 rounded-full flex items-center justify-center ${toast.type === "success" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+            }`}>
             {toast.type === "success" ? <CheckCircle2 className="size-4" /> : <AlertCircle className="size-4" />}
           </div>
           <div>
@@ -671,23 +669,23 @@ function AdminDashboard() {
       )}
 
       <div className="flex">
-        
+
         {/* SIDEBAR */}
         <aside className="w-64 min-h-screen bg-ink text-white p-8 space-y-12 sticky top-0 hidden lg:flex flex-col justify-between border-r border-white/5">
           <div className="space-y-12">
             <div className="font-display text-3xl flex items-center gap-2">
               TSR<span className="text-accent text-gold font-serif">.</span> Admin
             </div>
-            
+
             <nav className="space-y-2">
               <div className="text-[10px] tracking-[0.25em] uppercase text-white/30 mb-4 font-bold">Management</div>
-              <button 
+              <button
                 onClick={() => { setActiveTab("dashboard"); setSearchTerm(""); }}
                 className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all ${activeTab === "dashboard" ? "bg-white/10 text-white font-medium shadow-soft" : "text-white/50 hover:text-white"}`}
               >
                 <BarChart3 className="size-4" /> Dashboard
               </button>
-              <button 
+              <button
                 onClick={() => { setActiveTab("orders"); setSearchTerm(""); }}
                 className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all ${activeTab === "orders" ? "bg-white/10 text-white font-medium shadow-soft" : "text-white/50 hover:text-white"}`}
               >
@@ -698,19 +696,19 @@ function AdminDashboard() {
                   </span>
                 )}
               </button>
-              <button 
+              <button
                 onClick={() => { setActiveTab("products"); setSearchTerm(""); }}
                 className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all ${activeTab === "products" ? "bg-white/10 text-white font-medium shadow-soft" : "text-white/50 hover:text-white"}`}
               >
                 <Package className="size-4" /> Products
               </button>
-              <button 
+              <button
                 onClick={() => { setActiveTab("customers"); setSearchTerm(""); }}
                 className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all ${activeTab === "customers" ? "bg-white/10 text-white font-medium shadow-soft" : "text-white/50 hover:text-white"}`}
               >
                 <Users className="size-4" /> Customers
               </button>
-              <button 
+              <button
                 onClick={() => { setActiveTab("settings"); setSearchTerm(""); }}
                 className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all ${activeTab === "settings" ? "bg-white/10 text-white font-medium shadow-soft" : "text-white/50 hover:text-white"}`}
               >
@@ -724,9 +722,9 @@ function AdminDashboard() {
             <Link to="/" className="text-xs text-white/40 hover:text-white transition flex items-center gap-2">
               <ExternalLink className="size-3" /> Visit Storefront
             </Link>
-            
+
             {/* LOGOUT SECURE ACTION */}
-            <button 
+            <button
               onClick={handleLogout}
               className="text-xs text-rose-400/70 hover:text-rose-400 transition flex items-center gap-2 cursor-pointer w-full text-left font-bold uppercase tracking-wider"
             >
@@ -737,7 +735,7 @@ function AdminDashboard() {
 
         {/* MAIN BODY AREA */}
         <main className="flex-1 p-8 lg:p-12 space-y-12 max-w-7xl mx-auto overflow-hidden">
-          
+
           {/* HEADER */}
           <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-1">
@@ -756,11 +754,11 @@ function AdminDashboard() {
                 {activeTab === "settings" && "Manage administrator credentials and database settings."}
               </p>
             </div>
-            
+
             <div className="flex items-center gap-4">
               <div className="relative group">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground transition-colors group-focus-within:text-gold" />
-                <input 
+                <input
                   type="text"
                   placeholder={`Search ${activeTab}...`}
                   value={searchTerm}
@@ -770,7 +768,7 @@ function AdminDashboard() {
               </div>
 
               {activeTab === "products" && (
-                <button 
+                <button
                   onClick={() => setShowAddProductModal(true)}
                   className="bg-ink text-white px-5 py-2.5 rounded-full text-[10px] tracking-wider uppercase font-bold hover:bg-gold transition shadow-soft flex items-center gap-2 shrink-0 cursor-pointer"
                 >
@@ -779,7 +777,7 @@ function AdminDashboard() {
               )}
 
               {activeTab === "customers" && (
-                <button 
+                <button
                   onClick={() => setShowAddCustomerModal(true)}
                   className="bg-ink text-white px-5 py-2.5 rounded-full text-[10px] tracking-wider uppercase font-bold hover:bg-gold transition shadow-soft flex items-center gap-2 shrink-0 cursor-pointer"
                 >
@@ -848,17 +846,17 @@ function AdminDashboard() {
                               <line x1="0" y1="50" x2="500" y2="50" stroke="#F1EDE7" strokeWidth="1" strokeDasharray="5,5" />
                               <line x1="0" y1="100" x2="500" y2="100" stroke="#F1EDE7" strokeWidth="1" strokeDasharray="5,5" />
                               <line x1="0" y1="150" x2="500" y2="150" stroke="#F1EDE7" strokeWidth="1" strokeDasharray="5,5" />
-                              <path 
+                              <path
                                 d={`M 0,200 
                                   ${orders.slice().reverse().map((o, idx) => {
-                                    const x = (idx / (orders.length - 1 || 1)) * 500;
-                                    const y = 200 - Math.min(180, (o.total / 150) * 150 + 10);
-                                    return `L ${x},${y}`;
-                                  }).join(" ")} 
+                                  const x = (idx / (orders.length - 1 || 1)) * 500;
+                                  const y = 200 - Math.min(180, (o.total / 150) * 150 + 10);
+                                  return `L ${x},${y}`;
+                                }).join(" ")} 
                                   L 500,200 Z`}
                                 fill="url(#chartGrad)"
                               />
-                              <path 
+                              <path
                                 d={orders.slice().reverse().map((o, idx) => {
                                   const x = (idx / (orders.length - 1 || 1)) * 500;
                                   const y = 200 - Math.min(180, (o.total / 150) * 150 + 10);
@@ -899,24 +897,20 @@ function AdminDashboard() {
                             <div key={cat} className="space-y-2">
                               <div className="flex justify-between text-xs font-bold uppercase tracking-wider">
                                 <span className="flex items-center gap-2">
-                                  <span className={`size-2.5 rounded-full ${
-                                    cat === "hair" ? "bg-amber-600" :
-                                    cat === "skin" ? "bg-indigo-600" :
-                                    cat === "books" ? "bg-purple-600" :
-                                    cat === "bundles" ? "bg-gold bg-gold text-yellow-600 bg-yellow-600" : "bg-emerald-600"
-                                  }`} />
+                                  <span className={`size-2.5 rounded-full ${cat === "hair" ? "bg-amber-600" :
+                                      cat === "skin" ? "bg-indigo-600" :
+                                        cat === "bundles" ? "bg-gold bg-gold text-yellow-600 bg-yellow-600" : "bg-emerald-600"
+                                    }`} />
                                   {cat}
                                 </span>
                                 <span className="text-muted-foreground">${total.toFixed(2)} ({percentage.toFixed(0)}%)</span>
                               </div>
                               <div className="h-2 bg-secondary/35 rounded-full overflow-hidden">
-                                <div 
-                                  className={`h-full rounded-full transition-all duration-1000 ${
-                                    cat === "hair" ? "bg-amber-600" :
-                                    cat === "skin" ? "bg-indigo-600" :
-                                    cat === "books" ? "bg-purple-600" :
-                                    cat === "bundles" ? "bg-gold bg-yellow-600" : "bg-emerald-600"
-                                  }`}
+                                <div
+                                  className={`h-full rounded-full transition-all duration-1000 ${cat === "hair" ? "bg-amber-600" :
+                                      cat === "skin" ? "bg-indigo-600" :
+                                        cat === "bundles" ? "bg-gold bg-yellow-600" : "bg-emerald-600"
+                                    }`}
                                   style={{ width: `${percentage}%` }}
                                 />
                               </div>
@@ -930,7 +924,7 @@ function AdminDashboard() {
                   <div className="bg-white rounded-[2rem] border border-border/40 shadow-luxe overflow-hidden">
                     <div className="px-8 py-6 border-b border-border/40 flex items-center justify-between">
                       <h3 className="font-display text-2xl">Awaiting Fulfillment</h3>
-                      <button 
+                      <button
                         onClick={() => { setActiveTab("orders"); setStatusFilter("pending"); }}
                         className="text-xs tracking-widest text-gold hover:text-ink transition flex items-center gap-1 font-bold uppercase"
                       >
@@ -958,8 +952,8 @@ function AdminDashboard() {
                             </tr>
                           ) : (
                             orders.filter(o => o.status === "pending" || o.status === "processing" || o.status === "paid").slice(0, 5).map((order) => (
-                              <tr 
-                                key={order.id} 
+                              <tr
+                                key={order.id}
                                 onClick={() => setSelectedOrder(order)}
                                 className="hover:bg-secondary/10 transition-colors cursor-pointer group"
                               >
@@ -993,11 +987,10 @@ function AdminDashboard() {
                       <button
                         key={status}
                         onClick={() => setStatusFilter(status)}
-                        className={`px-5 py-2 rounded-full text-[10px] tracking-wider uppercase font-bold transition-all border shrink-0 cursor-pointer ${
-                          statusFilter === status 
-                            ? "bg-ink text-white border-ink shadow-soft" 
+                        className={`px-5 py-2 rounded-full text-[10px] tracking-wider uppercase font-bold transition-all border shrink-0 cursor-pointer ${statusFilter === status
+                            ? "bg-ink text-white border-ink shadow-soft"
                             : "bg-white text-muted-foreground border-border/40 hover:bg-secondary/20"
-                        }`}
+                          }`}
                       >
                         {status}
                       </button>
@@ -1027,37 +1020,37 @@ function AdminDashboard() {
                             </tr>
                           ) : (
                             filteredOrdersList.map((order) => (
-                              <tr 
-                                key={order.id} 
+                              <tr
+                                key={order.id}
                                 className="hover:bg-secondary/10 transition-colors group cursor-pointer"
                               >
-                                <td 
-                                  onClick={() => setSelectedOrder(order)} 
+                                <td
+                                  onClick={() => setSelectedOrder(order)}
                                   className="px-8 py-6 text-xs font-bold font-serif"
                                 >
                                   {order.id}
                                 </td>
-                                <td 
-                                  onClick={() => setSelectedOrder(order)} 
+                                <td
+                                  onClick={() => setSelectedOrder(order)}
                                   className="px-8 py-6"
                                 >
                                   <div className="text-xs font-bold font-display">{order.customerName}</div>
                                   <div className="text-[10px] text-muted-foreground">{order.email}</div>
                                 </td>
-                                <td 
-                                  onClick={() => setSelectedOrder(order)} 
+                                <td
+                                  onClick={() => setSelectedOrder(order)}
                                   className="px-8 py-6 text-xs text-muted-foreground"
                                 >
                                   {order.date}
                                 </td>
-                                <td 
-                                  onClick={() => setSelectedOrder(order)} 
+                                <td
+                                  onClick={() => setSelectedOrder(order)}
                                   className="px-8 py-6 text-xs"
                                 >
                                   {order.items.length} items
                                 </td>
-                                <td 
-                                  onClick={() => setSelectedOrder(order)} 
+                                <td
+                                  onClick={() => setSelectedOrder(order)}
                                   className="px-8 py-6 text-xs font-bold"
                                 >
                                   ${order.total.toFixed(2)}
@@ -1068,7 +1061,7 @@ function AdminDashboard() {
                                       <Loader2 className="size-3 animate-spin" /> Saving...
                                     </div>
                                   ) : (
-                                    <select 
+                                    <select
                                       value={order.status}
                                       onClick={(e) => e.stopPropagation()}
                                       onChange={(e) => handleStatusUpdate(order.id, e.target.value as Order["status"])}
@@ -1083,8 +1076,8 @@ function AdminDashboard() {
                                     </select>
                                   )}
                                 </td>
-                                <td 
-                                  onClick={() => setSelectedOrder(order)} 
+                                <td
+                                  onClick={() => setSelectedOrder(order)}
                                   className="px-8 py-6 text-right"
                                 >
                                   <ChevronRight className="size-4 text-muted-foreground group-hover:text-ink transition-transform group-hover:translate-x-1 inline" />
@@ -1103,15 +1096,14 @@ function AdminDashboard() {
               {activeTab === "products" && (
                 <div className="space-y-6 animate-fade-up">
                   <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-                    {["all", "hair", "skin", "bundles", "men", "books"].map((cat) => (
+                    {["all", "hair", "skin", "bundles", "men"].map((cat) => (
                       <button
                         key={cat}
                         onClick={() => setCategoryFilter(cat)}
-                        className={`px-5 py-2 rounded-full text-[10px] tracking-wider uppercase font-bold transition-all border shrink-0 cursor-pointer ${
-                          categoryFilter === cat 
-                            ? "bg-ink text-white border-ink shadow-soft" 
+                        className={`px-5 py-2 rounded-full text-[10px] tracking-wider uppercase font-bold transition-all border shrink-0 cursor-pointer ${categoryFilter === cat
+                            ? "bg-ink text-white border-ink shadow-soft"
                             : "bg-white text-muted-foreground border-border/40 hover:bg-secondary/20"
-                        }`}
+                          }`}
                       >
                         {cat}
                       </button>
@@ -1127,25 +1119,25 @@ function AdminDashboard() {
                       {filteredProductsList.map((product) => (
                         <div key={product.id} className="bg-white rounded-3xl border border-border/40 overflow-hidden shadow-sm hover:shadow-soft transition-all duration-300 flex flex-col justify-between group">
                           <div className="aspect-video w-full relative overflow-hidden bg-secondary/10 border-b border-border/20">
-                            <img 
-                              src={product.image} 
-                              alt={product.name} 
+                            <img
+                              src={product.image}
+                              alt={product.name}
                               onError={(e) => { (e.target as HTMLImageElement).src = PRESET_IMAGES[0].url; }}
-                              className="size-full object-cover transition-transform duration-[1.5s] group-hover:scale-105" 
+                              className="size-full object-cover transition-transform duration-[1.5s] group-hover:scale-105"
                             />
                             <span className="absolute top-4 left-4 glass px-3 py-1 rounded-full text-[9px] tracking-wider uppercase font-bold text-ink/80 backdrop-blur-md">
                               {product.category}
                             </span>
-                            
+
                             <div className="absolute top-4 right-4 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                              <button 
+                              <button
                                 onClick={() => openEditProductModal(product)}
                                 className="bg-white border border-border/40 p-2 rounded-xl hover:bg-gold hover:text-white transition shadow-sm text-ink cursor-pointer"
                                 title="Edit Catalog Fields"
                               >
                                 <Edit2 className="size-3.5" />
                               </button>
-                              <button 
+                              <button
                                 onClick={() => setShowDeleteProductConfirm(product)}
                                 className="bg-white border border-border/40 p-2 rounded-xl hover:bg-rose-600 hover:text-white transition shadow-sm text-ink cursor-pointer"
                                 title="Remove Formulation"
@@ -1211,8 +1203,8 @@ function AdminDashboard() {
                             </tr>
                           ) : (
                             filteredCustomersList.map((customer, idx) => (
-                              <tr 
-                                key={idx} 
+                              <tr
+                                key={idx}
                                 onClick={() => setSelectedCustomer(customer)}
                                 className="hover:bg-secondary/10 transition-colors group cursor-pointer"
                               >
@@ -1231,11 +1223,10 @@ function AdminDashboard() {
                                 <td className="px-8 py-5 text-xs text-center font-bold">{customer.orderCount}</td>
                                 <td className="px-8 py-5 text-xs font-bold text-emerald-600">${customer.totalSpent.toFixed(2)}</td>
                                 <td className="px-8 py-5">
-                                  <span className={`px-2 py-0.5 rounded-full text-[8px] tracking-wider uppercase font-bold ${
-                                    customer.source === "online" ? "text-blue-600 bg-blue-50 border border-blue-100" :
-                                    customer.source === "manual" ? "text-gold bg-amber-50 border border-amber-100" :
-                                    "text-violet-600 bg-violet-50 border border-violet-100"
-                                  }`}>
+                                  <span className={`px-2 py-0.5 rounded-full text-[8px] tracking-wider uppercase font-bold ${customer.source === "online" ? "text-blue-600 bg-blue-50 border border-blue-100" :
+                                      customer.source === "manual" ? "text-gold bg-amber-50 border border-amber-100" :
+                                        "text-violet-600 bg-violet-50 border border-violet-100"
+                                    }`}>
                                     {customer.source}
                                   </span>
                                 </td>
@@ -1255,7 +1246,7 @@ function AdminDashboard() {
               {/* ──────────────────────────────────────────────────────── SECURITY SETTINGS TAB ─────────────────────────────────────────────── */}
               {activeTab === "settings" && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-up">
-                  
+
                   {/* Master Profile Info Card */}
                   <div className="bg-white p-8 rounded-3xl border border-border/40 shadow-sm space-y-6 h-fit">
                     <div className="space-y-1">
@@ -1299,11 +1290,11 @@ function AdminDashboard() {
                     <form onSubmit={handlePasswordChangeSubmit} className="space-y-5 pt-2">
                       <div className="space-y-1">
                         <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Current Password *</label>
-                        <input 
+                        <input
                           type="password"
                           placeholder="••••••••"
                           value={securityForm.currentPassword}
-                          onChange={(e) => setSecurityForm({...securityForm, currentPassword: e.target.value})}
+                          onChange={(e) => setSecurityForm({ ...securityForm, currentPassword: e.target.value })}
                           className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none"
                           required
                         />
@@ -1312,22 +1303,22 @@ function AdminDashboard() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                           <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">New Security Password *</label>
-                          <input 
+                          <input
                             type="password"
                             placeholder="At least 5 characters"
                             value={securityForm.newPassword}
-                            onChange={(e) => setSecurityForm({...securityForm, newPassword: e.target.value})}
+                            onChange={(e) => setSecurityForm({ ...securityForm, newPassword: e.target.value })}
                             className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none"
                             required
                           />
                         </div>
                         <div className="space-y-1">
                           <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Confirm New Password *</label>
-                          <input 
+                          <input
                             type="password"
                             placeholder="Must match exactly"
                             value={securityForm.confirmPassword}
-                            onChange={(e) => setSecurityForm({...securityForm, confirmPassword: e.target.value})}
+                            onChange={(e) => setSecurityForm({ ...securityForm, confirmPassword: e.target.value })}
                             className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none"
                             required
                           />
@@ -1335,7 +1326,7 @@ function AdminDashboard() {
                       </div>
 
                       <div className="pt-4 flex justify-end">
-                        <button 
+                        <button
                           type="submit"
                           disabled={submittingPassword}
                           className="bg-ink text-white px-8 py-3 rounded-full text-[10px] tracking-widest uppercase font-bold hover:bg-gold transition shadow-soft flex items-center gap-2 cursor-pointer"
@@ -1356,14 +1347,14 @@ function AdminDashboard() {
       </div>
 
       {/* DRAWERS & OVERLAYS */}
-      
+
       {/* 1. ORDER DETAILS SLIDING DRAWER */}
       {selectedOrder && (
         <div className="fixed inset-0 z-50 overflow-hidden">
           <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm transition-opacity" onClick={() => setSelectedOrder(null)} />
           <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
             <div className="w-screen max-w-lg bg-white shadow-2xl border-l border-border/20 flex flex-col justify-between">
-              
+
               <div className="px-8 py-6 border-b border-border/40 flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="text-[10px] tracking-wider uppercase font-bold text-gold">Fulfillment Details</div>
@@ -1380,7 +1371,7 @@ function AdminDashboard() {
                     <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Ritual Status</span>
                     <div className="text-xs font-bold text-ink uppercase tracking-wider">{selectedOrder.status}</div>
                   </div>
-                  <select 
+                  <select
                     value={selectedOrder.status}
                     onChange={(e) => handleStatusUpdate(selectedOrder.id, e.target.value as Order["status"])}
                     className={`px-4 py-1.5 rounded-full text-[10px] tracking-widest uppercase font-bold border ${getStatusColor(selectedOrder.status)} outline-none cursor-pointer`}
@@ -1473,7 +1464,7 @@ function AdminDashboard() {
           <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm transition-opacity" onClick={() => setSelectedCustomer(null)} />
           <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
             <div className="w-screen max-w-lg bg-white shadow-2xl border-l border-l-border/20 flex flex-col justify-between">
-              
+
               <div className="px-8 py-6 border-b border-border/40 flex items-center justify-between">
                 <div className="space-y-1">
                   <div className="text-[10px] tracking-wider uppercase font-bold text-gold">VIP Client Profile</div>
@@ -1556,7 +1547,7 @@ function AdminDashboard() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setShowAddProductModal(false)} />
           <div className="bg-white rounded-[2rem] border border-border/40 shadow-2xl max-w-lg w-full z-10 overflow-hidden flex flex-col justify-between max-h-[90vh]">
-            
+
             <div className="px-8 py-6 border-b border-border/40 flex justify-between items-center">
               <h3 className="font-display text-2xl">New Formulation</h3>
               <button onClick={() => setShowAddProductModal(false)} className="p-2 rounded-xl border border-border/60 hover:bg-secondary text-ink cursor-pointer">
@@ -1568,27 +1559,26 @@ function AdminDashboard() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Product ID Slug *</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="rose-mist"
                     value={productForm.id}
-                    onChange={(e) => setProductForm({...productForm, id: e.target.value})}
+                    onChange={(e) => setProductForm({ ...productForm, id: e.target.value })}
                     className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none font-mono"
                     required
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Category</label>
-                  <select 
+                  <select
                     value={productForm.category}
-                    onChange={(e) => setProductForm({...productForm, category: e.target.value as Product["category"]})}
+                    onChange={(e) => setProductForm({ ...productForm, category: e.target.value as Product["category"] })}
                     className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none cursor-pointer"
                   >
                     <option value="hair">Hair Care</option>
                     <option value="skin">Skin Care</option>
                     <option value="bundles">Ritual Bundles</option>
                     <option value="men">Men's Care</option>
-                    <option value="books">Books</option>
                   </select>
                 </div>
               </div>
@@ -1596,23 +1586,23 @@ function AdminDashboard() {
               <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-2 space-y-1">
                   <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Name *</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="TSR™ Rosemary Mist"
                     value={productForm.name}
-                    onChange={(e) => setProductForm({...productForm, name: e.target.value})}
+                    onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
                     className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none"
                     required
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Price *</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     step="0.01"
                     placeholder="19.99"
                     value={productForm.price || ""}
-                    onChange={(e) => setProductForm({...productForm, price: Number(e.target.value)})}
+                    onChange={(e) => setProductForm({ ...productForm, price: Number(e.target.value) })}
                     className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none"
                     required
                   />
@@ -1621,33 +1611,33 @@ function AdminDashboard() {
 
               <div className="space-y-1">
                 <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Description</label>
-                <textarea 
+                <textarea
                   placeholder="Botanical notes of this recipe..."
                   rows={3}
                   value={productForm.description}
-                  onChange={(e) => setProductForm({...productForm, description: e.target.value})}
+                  onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
                   className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none font-serif italic"
                 />
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Ingredients (Comma separated)</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="Rosemary, Castor, Vitamin E"
                   value={productForm.ingredients}
-                  onChange={(e) => setProductForm({...productForm, ingredients: e.target.value})}
+                  onChange={(e) => setProductForm({ ...productForm, ingredients: e.target.value })}
                   className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none"
                 />
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Benefits (Comma separated)</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="Deep moisture, Protects ends"
                   value={productForm.benefits}
-                  onChange={(e) => setProductForm({...productForm, benefits: e.target.value})}
+                  onChange={(e) => setProductForm({ ...productForm, benefits: e.target.value })}
                   className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none"
                 />
               </div>
@@ -1657,7 +1647,7 @@ function AdminDashboard() {
                   <span className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Product Image</span>
                   <button
                     type="button"
-                    onClick={() => setProductForm({...productForm, useCustomImage: !productForm.useCustomImage})}
+                    onClick={() => setProductForm({ ...productForm, useCustomImage: !productForm.useCustomImage })}
                     className="text-[9px] tracking-wider uppercase text-gold hover:text-ink transition font-bold cursor-pointer"
                   >
                     {productForm.useCustomImage ? "Preset Assets" : "Custom URL"}
@@ -1665,11 +1655,11 @@ function AdminDashboard() {
                 </div>
 
                 {productForm.useCustomImage ? (
-                  <input 
-                    type="url" 
+                  <input
+                    type="url"
                     placeholder="https://images.unsplash.com/..."
                     value={productForm.imageCustom}
-                    onChange={(e) => setProductForm({...productForm, imageCustom: e.target.value})}
+                    onChange={(e) => setProductForm({ ...productForm, imageCustom: e.target.value })}
                     className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none"
                   />
                 ) : (
@@ -1678,10 +1668,9 @@ function AdminDashboard() {
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => setProductForm({...productForm, imagePreset: img.url})}
-                        className={`aspect-square rounded-xl overflow-hidden border-2 relative shrink-0 transition-all ${
-                          productForm.imagePreset === img.url ? "border-gold scale-95 shadow-soft" : "border-transparent opacity-60 hover:opacity-100"
-                        }`}
+                        onClick={() => setProductForm({ ...productForm, imagePreset: img.url })}
+                        className={`aspect-square rounded-xl overflow-hidden border-2 relative shrink-0 transition-all ${productForm.imagePreset === img.url ? "border-gold scale-95 shadow-soft" : "border-transparent opacity-60 hover:opacity-100"
+                          }`}
                       >
                         <img src={img.url} alt={img.name} className="size-full object-cover" />
                       </button>
@@ -1710,7 +1699,7 @@ function AdminDashboard() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setShowEditProductModal(null)} />
           <div className="bg-white rounded-[2rem] border border-border/40 shadow-2xl max-w-lg w-full z-10 overflow-hidden flex flex-col justify-between max-h-[90vh]">
-            
+
             <div className="px-8 py-6 border-b border-border/40 flex justify-between items-center">
               <h3 className="font-display text-2xl">Modify Formulation</h3>
               <button onClick={() => setShowEditProductModal(null)} className="p-2 rounded-xl border border-border/60 hover:bg-secondary text-ink cursor-pointer">
@@ -1726,16 +1715,15 @@ function AdminDashboard() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Category</label>
-                  <select 
+                  <select
                     value={productForm.category}
-                    onChange={(e) => setProductForm({...productForm, category: e.target.value as Product["category"]})}
+                    onChange={(e) => setProductForm({ ...productForm, category: e.target.value as Product["category"] })}
                     className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none cursor-pointer"
                   >
                     <option value="hair">Hair Care</option>
                     <option value="skin">Skin Care</option>
                     <option value="bundles">Ritual Bundles</option>
                     <option value="men">Men's Care</option>
-                    <option value="books">Books</option>
                   </select>
                 </div>
               </div>
@@ -1743,23 +1731,23 @@ function AdminDashboard() {
               <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-2 space-y-1">
                   <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Name *</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="TSR™ Rosemary Mist"
                     value={productForm.name}
-                    onChange={(e) => setProductForm({...productForm, name: e.target.value})}
+                    onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
                     className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none"
                     required
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Price *</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     step="0.01"
                     placeholder="19.99"
                     value={productForm.price || ""}
-                    onChange={(e) => setProductForm({...productForm, price: Number(e.target.value)})}
+                    onChange={(e) => setProductForm({ ...productForm, price: Number(e.target.value) })}
                     className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none"
                     required
                   />
@@ -1768,33 +1756,33 @@ function AdminDashboard() {
 
               <div className="space-y-1">
                 <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Description</label>
-                <textarea 
+                <textarea
                   placeholder="Botanical notes of this recipe..."
                   rows={3}
                   value={productForm.description}
-                  onChange={(e) => setProductForm({...productForm, description: e.target.value})}
+                  onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
                   className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none font-serif italic"
                 />
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Ingredients (Comma separated)</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="Rosemary, Castor, Vitamin E"
                   value={productForm.ingredients}
-                  onChange={(e) => setProductForm({...productForm, ingredients: e.target.value})}
+                  onChange={(e) => setProductForm({ ...productForm, ingredients: e.target.value })}
                   className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none"
                 />
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Benefits (Comma separated)</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="Deep moisture, Protects ends"
                   value={productForm.benefits}
-                  onChange={(e) => setProductForm({...productForm, benefits: e.target.value})}
+                  onChange={(e) => setProductForm({ ...productForm, benefits: e.target.value })}
                   className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none"
                 />
               </div>
@@ -1804,7 +1792,7 @@ function AdminDashboard() {
                   <span className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Product Image</span>
                   <button
                     type="button"
-                    onClick={() => setProductForm({...productForm, useCustomImage: !productForm.useCustomImage})}
+                    onClick={() => setProductForm({ ...productForm, useCustomImage: !productForm.useCustomImage })}
                     className="text-[9px] tracking-wider uppercase text-gold hover:text-ink transition font-bold cursor-pointer"
                   >
                     {productForm.useCustomImage ? "Preset Assets" : "Custom URL"}
@@ -1812,11 +1800,11 @@ function AdminDashboard() {
                 </div>
 
                 {productForm.useCustomImage ? (
-                  <input 
-                    type="url" 
+                  <input
+                    type="url"
                     placeholder="https://images.unsplash.com/..."
                     value={productForm.imageCustom}
-                    onChange={(e) => setProductForm({...productForm, imageCustom: e.target.value})}
+                    onChange={(e) => setProductForm({ ...productForm, imageCustom: e.target.value })}
                     className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none"
                   />
                 ) : (
@@ -1825,10 +1813,9 @@ function AdminDashboard() {
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => setProductForm({...productForm, imagePreset: img.url})}
-                        className={`aspect-square rounded-xl overflow-hidden border-2 relative shrink-0 transition-all ${
-                          productForm.imagePreset === img.url ? "border-gold scale-95 shadow-soft" : "border-transparent opacity-60 hover:opacity-100"
-                        }`}
+                        onClick={() => setProductForm({ ...productForm, imagePreset: img.url })}
+                        className={`aspect-square rounded-xl overflow-hidden border-2 relative shrink-0 transition-all ${productForm.imagePreset === img.url ? "border-gold scale-95 shadow-soft" : "border-transparent opacity-60 hover:opacity-100"
+                          }`}
                       >
                         <img src={img.url} alt={img.name} className="size-full object-cover" />
                       </button>
@@ -1857,7 +1844,7 @@ function AdminDashboard() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setShowAddCustomerModal(false)} />
           <div className="bg-white rounded-[2rem] border border-border/40 shadow-2xl max-w-md w-full z-10 overflow-hidden flex flex-col justify-between">
-            
+
             <div className="px-8 py-6 border-b border-border/40 flex justify-between items-center">
               <h3 className="font-display text-2xl">Register VIP Client</h3>
               <button onClick={() => setShowAddCustomerModal(false)} className="p-2 rounded-xl border border-border/60 hover:bg-secondary text-ink cursor-pointer">
@@ -1868,33 +1855,33 @@ function AdminDashboard() {
             <form onSubmit={handleAddCustomer} className="p-8 space-y-4">
               <div className="space-y-1">
                 <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Full Name *</label>
-                <input type="text" placeholder="e.g. Lady Clara Sterling" value={customerForm.name} onChange={(e) => setCustomerForm({...customerForm, name: e.target.value})} className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2 text-xs outline-none" required />
+                <input type="text" placeholder="e.g. Lady Clara Sterling" value={customerForm.name} onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })} className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2 text-xs outline-none" required />
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Email Address *</label>
-                <input type="email" placeholder="clara@sterlinghall.com" value={customerForm.email} onChange={(e) => setCustomerForm({...customerForm, email: e.target.value})} className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2 text-xs outline-none font-mono" required />
+                <input type="email" placeholder="clara@sterlinghall.com" value={customerForm.email} onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })} className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2 text-xs outline-none font-mono" required />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Phone Number</label>
-                  <input type="text" placeholder="407-555-0199" value={customerForm.phone} onChange={(e) => setCustomerForm({...customerForm, phone: e.target.value})} className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2 text-xs outline-none" />
+                  <input type="text" placeholder="407-555-0199" value={customerForm.phone} onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })} className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2 text-xs outline-none" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">City Region</label>
-                  <input type="text" placeholder="Orlando, FL" value={customerForm.city} onChange={(e) => setCustomerForm({...customerForm, city: e.target.value})} className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2 text-xs outline-none" />
+                  <input type="text" placeholder="Orlando, FL" value={customerForm.city} onChange={(e) => setCustomerForm({ ...customerForm, city: e.target.value })} className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2 text-xs outline-none" />
                 </div>
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Physical Shipping Address</label>
-                <input type="text" placeholder="100 Botanical Manor Lane" value={customerForm.address} onChange={(e) => setCustomerForm({...customerForm, address: e.target.value})} className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2 text-xs outline-none" />
+                <input type="text" placeholder="100 Botanical Manor Lane" value={customerForm.address} onChange={(e) => setCustomerForm({ ...customerForm, address: e.target.value })} className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2 text-xs outline-none" />
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] tracking-wider uppercase font-bold text-muted-foreground">Bespoke Client Notes</label>
-                <textarea placeholder="Private notes about hair textures, preferred scents..." rows={2} value={customerForm.notes} onChange={(e) => setCustomerForm({...customerForm, notes: e.target.value})} className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2 text-xs outline-none font-serif italic" />
+                <textarea placeholder="Private notes about hair textures, preferred scents..." rows={2} value={customerForm.notes} onChange={(e) => setCustomerForm({ ...customerForm, notes: e.target.value })} className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2 text-xs outline-none font-serif italic" />
               </div>
 
               <div className="pt-4 flex gap-3 border-t border-border/30">
@@ -1920,7 +1907,7 @@ function AdminDashboard() {
             <div className="size-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
               <AlertCircle className="size-8" />
             </div>
-            
+
             <div className="space-y-2">
               <h3 className="font-display text-xl">Decommission Formulation?</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">

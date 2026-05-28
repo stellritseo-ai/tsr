@@ -53,7 +53,7 @@ function ProductsPage() {
     fetchLiveProducts();
   }, []);
 
-  const categories = ["all", "hair", "skin", "bundles", "men", "books"];
+  const categories = ["all", "hair", "skin", "bundles", "men"];
 
   const filteredProducts = useMemo(() => {
     return liveProducts.filter((p) => {
@@ -111,8 +111,8 @@ function ProductsPage() {
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
                   className={`px-6 py-2 rounded-full text-[10px] tracking-[0.2em] uppercase transition-all ${activeCategory === cat
-                      ? "bg-ink text-white shadow-soft"
-                      : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
+                    ? "bg-ink text-white shadow-soft"
+                    : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
                     }`}
                 >
                   {cat}
@@ -172,7 +172,15 @@ function ProductsPage() {
                       <div className="space-y-4">
                         <div className="flex justify-between items-baseline border-b border-border/40 pb-6">
                           <h3 className="font-display text-4xl md:text-5xl">{product.name}</h3>
-                          <span className="font-display text-3xl text-accent">${product.price}</span>
+                          {product.originalPrice ? (
+                            <span className="flex items-center gap-3">
+                              <span className="line-through text-muted-foreground/60 text-2xl font-light">${product.originalPrice.toFixed(2)}</span>
+                              <span className="font-display text-3xl text-gold">${product.price.toFixed(2)}</span>
+                              <span className="glass px-2.5 py-1 rounded-full text-[9px] font-bold text-emerald-600 bg-emerald-50 tracking-wider uppercase">50% Off</span>
+                            </span>
+                          ) : (
+                            <span className="font-display text-3xl text-accent">${product.price}</span>
+                          )}
                         </div>
 
                         <p className="font-serif text-muted-foreground leading-relaxed italic text-xl">
@@ -235,7 +243,14 @@ function ProductsPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between items-baseline">
                       <h3 className="font-display text-2xl">{p.name}</h3>
-                      <span className="text-accent">${p.price}</span>
+                      {p.originalPrice ? (
+                        <span className="text-right">
+                          <span className="text-xs line-through text-muted-foreground/60 mr-2">${p.originalPrice.toFixed(2)}</span>
+                          <span className="text-accent font-bold">${p.price.toFixed(2)}</span>
+                        </span>
+                      ) : (
+                        <span className="text-accent">${p.price}</span>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2 italic font-serif">{p.description}</p>
                     <button

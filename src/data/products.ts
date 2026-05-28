@@ -18,6 +18,7 @@ export interface Product {
   id: string;
   name: string;
   price: number;
+  originalPrice?: number;
   description: string;
   ingredients?: string[];
   includes?: string[];
@@ -27,7 +28,7 @@ export interface Product {
   featured?: boolean;
 }
 
-export const products: Product[] = [
+const rawProducts: Product[] = [
   {
     id: "oil",
     name: "TSR™ Growth Oil",
@@ -187,3 +188,15 @@ export const products: Product[] = [
   },
 
 ];
+
+export const products: Product[] = rawProducts.map(product => {
+  const isBook = product.category === 'books';
+  if (product.price >= 20 && !isBook) {
+    return {
+      ...product,
+      originalPrice: product.price,
+      price: Math.round((product.price * 0.5) * 100) / 100
+    };
+  }
+  return product;
+});

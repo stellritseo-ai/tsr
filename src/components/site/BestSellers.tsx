@@ -10,7 +10,16 @@ const items = [
   { name: "Growth Oil", desc: "Rosemary, argan, castor. Roots fed, lengths strengthened.", img: oil, price: 38 },
   { name: "Aloe Shea Soap", desc: "A creamy artisan bar that leaves skin softened and calm.", img: soap, price: 18 },
   { name: "Hydrating Spray", desc: "Aloe and rose water mist — hydration at first touch.", img: spray, price: 24 },
-];
+].map(it => {
+  if (it.price >= 20) {
+    return {
+      ...it,
+      originalPrice: it.price,
+      price: Math.round((it.price * 0.5) * 100) / 100
+    };
+  }
+  return it;
+});
 
 export function BestSellers() {
   const ref = useRef<HTMLDivElement>(null);
@@ -50,7 +59,14 @@ export function BestSellers() {
                   <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{it.desc}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <div className="text-lg">${it.price}</div>
+                  {it.originalPrice ? (
+                    <div>
+                      <div className="text-xs line-through text-muted-foreground/60">${it.originalPrice.toFixed(2)}</div>
+                      <div className="text-lg font-bold text-gold">${it.price.toFixed(2)}</div>
+                    </div>
+                  ) : (
+                    <div className="text-lg">${it.price}</div>
+                  )}
                   <button className="mt-2 text-xs tracking-widest uppercase story-link">Add</button>
                 </div>
               </div>
