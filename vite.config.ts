@@ -22,6 +22,73 @@ export default defineConfig(({ mode }) => {
       {
         name: 'api-middleware',
         configureServer(server) {
+          // ── SOCKET.IO REAL-TIME CHAT SERVER ──────────────────────────────────
+          if (server.httpServer) {
+            import('socket.io').then(({ Server: SocketIOServer }) => {
+              import('mongodb').then(({ MongoClient }) => {
+                const io = new SocketIOServer(server.httpServer!, {
+                  cors: { origin: '*' },
+                  path: '/socket.io',
+                });
+
+                // Persistent MongoDB client for socket events
+                const mongoClient = new MongoClient(env.MONGODB_URI || '');
+                let mongoDb: any = null;
+
+                const getDb = async () => {
+                  if (!mongoDb) {
+                    await mongoClient.connect();
+                    mongoDb = mongoClient.db('tsr-commerce');
+                  }
+                  return mongoDb;
+                };
+
+                io.on('connection', (socket: any) => {
+                  // Customer/admin joins a chat room
+                  socket.on('join-chat', (chatId: string) => {
+                    socket.join(chatId);
+                  });
+
+                  // Incoming message from customer or admin
+                  socket.on('send-message', async (data: { chatId: string; sender: string; text: string }, ack?: () => void) => {
+                    try {
+                      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                      const message = { sender: data.sender, text: data.text, timestamp };
+
+                      // Persist to MongoDB
+                      const db = await getDb();
+                      const updateDoc: any = {
+                        $push: { messages: message },
+                        $set: { lastMessage: data.text, timestamp },
+                      };
+                      if (data.sender === 'customer') updateDoc.$set.unread = true;
+                      await db.collection('chats').updateOne({ id: data.chatId }, updateDoc);
+
+                      // Broadcast to everyone else in the room (not the sender)
+                      socket.to(data.chatId).emit('receive-message', { chatId: data.chatId, message });
+
+                      // Also emit to sender so admin console reflects (for admin side)
+                      io.to(data.chatId).emit('receive-message', { chatId: data.chatId, message });
+
+                      if (ack) ack();
+                    } catch (err) {
+                      console.error('[Socket] send-message error:', err);
+                    }
+                  });
+
+                  // Admin typing indicators
+                  socket.on('admin-typing', (chatId: string) => {
+                    socket.to(chatId).emit('admin-typing', chatId);
+                  });
+                  socket.on('admin-typing-stop', (chatId: string) => {
+                    socket.to(chatId).emit('admin-typing-stop', chatId);
+                  });
+                });
+              });
+            });
+          }
+          // ── END SOCKET.IO ─────────────────────────────────────────────────────
+
           server.middlewares.use(async (req, res, next) => {
             if (req.url?.startsWith('/api/')) {
               const { MongoClient, ObjectId } = await import('mongodb');

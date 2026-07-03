@@ -29,6 +29,7 @@ import {
   getVisitorsCount,
   deleteOrder
 } from "@/lib/serverFunctions";
+import { io as socketIO } from "socket.io-client";
 import { Order } from "@/types/order";
 import { products as staticProducts, Product } from "@/data/products";
 
@@ -360,32 +361,41 @@ function AdminDashboard() {
     }
   };
 
-  // Poll for live chats when the chat tab is active
+  // Replace HTTP polling with Socket.IO for real-time chat
   useEffect(() => {
-    if (activeTab !== "chat" || !isAuthenticated) return;
+    if (!isAuthenticated) return;
 
-    const interval = setInterval(async () => {
-      try {
-        const fetchedChats = await getChatThreads();
-        if (fetchedChats && fetchedChats.success && Array.isArray(fetchedChats.chats)) {
-          const mappedChats = fetchedChats.chats.map((c: any) => ({
-            id: c.id,
-            customerName: c.customerName || "Guest",
-            customerEmail: c.customerEmail || "",
-            lastMessage: c.lastMessage || "",
-            timestamp: c.timestamp || "",
-            unread: c.unread ?? false,
-            messages: c.messages || []
-          }));
-          setChats(mappedChats);
-        }
-      } catch (err) {
-        console.error("Error polling chat threads:", err);
-      }
-    }, 5000);
+    const socket = socketIO({ path: '/socket.io', transports: ['websocket', 'polling'] });
 
-    return () => clearInterval(interval);
-  }, [activeTab, isAuthenticated]);
+    // Join rooms for all current chats
+    const joinAll = (threads: typeof chats) => threads.forEach(c => socket.emit('join-chat', c.id));
+    joinAll(chats);
+
+    // When a new message arrives, update the thread in state
+    socket.on('receive-message', (data: { chatId: string; message: { sender: string; text: string; timestamp: string } }) => {
+      setChats(prev => prev.map(c => {
+        if (c.id !== data.chatId) return c;
+        const last = c.messages[c.messages.length - 1];
+        if (last && last.text === data.message.text && last.sender === data.message.sender) return c;
+        return {
+          ...c,
+          lastMessage: data.message.text,
+          timestamp: data.message.timestamp,
+          unread: data.message.sender === 'customer' ? true : c.unread,
+          messages: [...c.messages, data.message as any],
+        };
+      }));
+    });
+
+    // Store socket ref so we can emit from send handler
+    (window as any).__adminChatSocket = socket;
+
+    return () => {
+      socket.disconnect();
+      delete (window as any).__adminChatSocket;
+    };
+  }, [isAuthenticated, chats.length]);
+
 
   // ADMIN LOGIN FLOW
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -1984,7 +1994,11 @@ function AdminDashboard() {
                                 const now = new Date();
                                 const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-                                // Append admin message locally first
+                                // Stop typing indicator
+                                const sock = (window as any).__adminChatSocket;
+                                if (sock) sock.emit('admin-typing-stop', selectedChat.id);
+
+                                // Optimistic local update
                                 setChats(prev => prev.map(c => {
                                   if (c.id === selectedChat.id) {
                                     return {
@@ -1999,14 +2013,20 @@ function AdminDashboard() {
                                   }
                                   return c;
                                 }));
-                                
+
                                 setChatInputText("");
 
-                                try {
-                                  await sendChatMessage(selectedChat.id, 'admin', currentMsgText);
-                                } catch (err) {
-                                  console.error("Failed to send chat message:", err);
-                                  showToast("Failed to transmit support message", "error");
+                                // Send via Socket.IO (persists to DB + pushes to customer)
+                                if (sock) {
+                                  sock.emit('send-message', { chatId: selectedChat.id, sender: 'admin', text: currentMsgText });
+                                } else {
+                                  // Fallback to HTTP
+                                  try {
+                                    await sendChatMessage(selectedChat.id, 'admin', currentMsgText);
+                                  } catch (err) {
+                                    console.error("Failed to send chat message:", err);
+                                    showToast("Failed to transmit support message", "error");
+                                  }
                                 }
 
                               }}
@@ -2016,7 +2036,17 @@ function AdminDashboard() {
                                 type="text"
                                 placeholder={`Type message to send to ${selectedChat.customerName}...`}
                                 value={chatInputText}
-                                onChange={(e) => setChatInputText(e.target.value)}
+                                onChange={(e) => {
+                                  setChatInputText(e.target.value);
+                                  const sock = (window as any).__adminChatSocket;
+                                  if (sock) {
+                                    if (e.target.value.trim()) {
+                                      sock.emit('admin-typing', selectedChat.id);
+                                    } else {
+                                      sock.emit('admin-typing-stop', selectedChat.id);
+                                    }
+                                  }
+                                }}
                                 className="flex-1 bg-secondary/15 border border-border/30 focus:border-gold/40 rounded-full px-5 py-2.5 text-xs outline-none font-sans font-medium text-ink"
                                 required
                               />
