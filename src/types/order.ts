@@ -20,5 +20,6 @@ export interface Order {
   shipping: number;
   total: number;
   status: 'pending' | 'processing' | 'paid' | 'shipped' | 'completed' | 'cancelled';
+  paymentMethod?: 'Stripe' | 'COD';
   date: string;
 }

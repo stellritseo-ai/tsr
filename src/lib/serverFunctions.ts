@@ -111,4 +111,82 @@ export const sendContactMessage = async (contactData: {
   return response.json();
 };
 
+export const getContactMessages = async () => {
+  const response = await fetch('/api/get-contact-messages');
+  return response.json();
+};
+
+export const deleteContactMessage = async (id: string) => {
+  const response = await fetch('/api/delete-contact-message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  });
+  return response.json();
+};
+
+export const getCloudinarySignature = async () => {
+  const response = await fetch('/api/cloudinary-signature');
+  return response.json();
+};
+
+export const startChatThread = async (customerName: string, customerEmail: string) => {
+  const response = await fetch('/api/chat/start', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ customerName, customerEmail }),
+  });
+  return response.json();
+};
+
+export const getChatThread = async (id: string) => {
+  const response = await fetch(`/api/chat/get?id=${encodeURIComponent(id)}`);
+  return response.json();
+};
+
+export const sendChatMessage = async (chatId: string, sender: 'customer' | 'admin', text: string) => {
+  const response = await fetch('/api/chat/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chatId, sender, text }),
+  });
+  return response.json();
+};
+
+export const getChatThreads = async () => {
+  const response = await fetch('/api/chat/list');
+  return response.json();
+};
+
+export const readChatThread = async (chatId: string) => {
+  const response = await fetch('/api/chat/read', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chatId }),
+  });
+  return response.json();
+};
+
+export const incrementVisitors = async () => {
+  const response = await fetch('/api/visitors/increment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return response.json();
+};
+
+export const getVisitorsCount = async () => {
+  const response = await fetch('/api/visitors/count');
+  return response.json();
+};
+
+export const deleteOrder = async (id: string) => {
+  const response = await fetch('/api/delete-order', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  });
+  return response.json();
+};
+
 

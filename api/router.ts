@@ -1,7 +1,7 @@
 import url from 'url';
 import crypto from 'crypto';
 import Stripe from 'stripe';
-import { MongoClient, Db } from 'mongodb';
+import { MongoClient, Db, ObjectId } from 'mongodb';
 import nodemailer from 'nodemailer';
 
 // ─── TYPES & INTERFACES ──────────────────────────────────────────────────────
@@ -1054,6 +1054,39 @@ async function handleGetProducts(req: any, res: any) {
   }
 }
 
+// ─── CLOUDINARY SIGNATURE GENERATION ─────────────────────────────────────────
+async function handleGetCloudinarySignature(req: any, res: any) {
+  if (req.method !== 'POST' && req.method !== 'GET') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
+  try {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME || "q64fglez";
+    const apiKey = process.env.CLOUDINARY_API_KEY || "858366267216782";
+    const apiSecret = process.env.CLOUDINARY_API_SECRET || "Acl5fRzfRFq5jcyi9w68tx0Egic";
+
+    if (!apiSecret) {
+      return res.status(500).json({ success: false, error: "Cloudinary API Secret is missing in server environment" });
+    }
+
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const folder = "tsr_products";
+
+    const stringToSign = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
+    const signature = crypto.createHash('sha1').update(stringToSign).digest('hex');
+
+    res.status(200).json({
+      success: true,
+      signature,
+      timestamp,
+      apiKey,
+      cloudName,
+      folder
+    });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
 // ─── 2. CREATE PRODUCT ─────────────────────────────────────────────────────
 async function handleCreateProduct(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
@@ -1246,6 +1279,187 @@ async function handleSendContactMessage(req: any, res: any) {
   }
 }
 
+async function handleGetContactMessages(req: any, res: any) {
+  if (req.method !== 'GET') return res.status(405).json({ message: 'Method not allowed' });
+  try {
+    const { db } = await connectToDatabase();
+    const messages = await db.collection("contact_messages").find({}).sort({ createdAt: -1 }).toArray();
+    res.status(200).json({ success: true, messages });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+async function handleDeleteContactMessage(req: any, res: any) {
+  if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
+  try {
+    const { db } = await connectToDatabase();
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ success: false, error: 'Missing message ID' });
+
+    const result = await db.collection("contact_messages").deleteOne({
+      _id: new ObjectId(id)
+    });
+    res.status(200).json({ success: true, deletedCount: result.deletedCount });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+async function handleChatStart(req: any, res: any) {
+  if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
+  try {
+    const { db } = await connectToDatabase();
+    const { customerName, customerEmail } = req.body;
+    if (!customerName || !customerEmail) {
+      return res.status(400).json({ success: false, error: 'Missing name or email' });
+    }
+
+    const chatId = `chat-${Math.floor(100000 + Math.random() * 900000)}`;
+    const newChat = {
+      id: chatId,
+      customerName,
+      customerEmail,
+      lastMessage: "Consultation started",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      unread: true,
+      messages: [
+        {
+          sender: "admin",
+          text: `Hello ${customerName}! Welcome to TSR Skin & Hair Care. How can we support your self-care ritual today?`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]
+    };
+
+    await db.collection("chats").insertOne(newChat);
+    res.status(200).json({ success: true, chat: newChat });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+async function handleChatGet(req: any, res: any) {
+  if (req.method !== 'GET') return res.status(405).json({ message: 'Method not allowed' });
+  try {
+    const { db } = await connectToDatabase();
+    const parsedUrl = url.parse(req.url, true);
+    const id = parsedUrl.query.id as string;
+    if (!id) return res.status(400).json({ success: false, error: 'Missing chat ID' });
+
+    const chat = await db.collection("chats").findOne({ id });
+    if (!chat) return res.status(404).json({ success: false, error: 'Chat not found' });
+
+    res.status(200).json({ success: true, chat });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+async function handleChatSend(req: any, res: any) {
+  if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
+  try {
+    const { db } = await connectToDatabase();
+    const { chatId, sender, text } = req.body;
+    if (!chatId || !sender || !text) {
+      return res.status(400).json({ success: false, error: 'Missing parameters' });
+    }
+
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const newMessage = { sender, text, timestamp };
+
+    const updateDoc: any = {
+      $push: { messages: newMessage },
+      $set: { 
+        lastMessage: text,
+        timestamp: timestamp
+      }
+    };
+
+    if (sender === 'customer') {
+      updateDoc.$set.unread = true;
+    }
+
+    await db.collection("chats").updateOne(
+      { id: chatId },
+      updateDoc
+    );
+
+    res.status(200).json({ success: true });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+async function handleChatList(req: any, res: any) {
+  if (req.method !== 'GET') return res.status(405).json({ message: 'Method not allowed' });
+  try {
+    const { db } = await connectToDatabase();
+    const chats = await db.collection("chats").find({}).toArray();
+    res.status(200).json({ success: true, chats });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+async function handleChatRead(req: any, res: any) {
+  if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
+  try {
+    const { db } = await connectToDatabase();
+    const { chatId } = req.body;
+    await db.collection("chats").updateOne(
+      { id: chatId },
+      { $set: { unread: false } }
+    );
+    res.status(200).json({ success: true });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+async function handleDeleteOrder(req: any, res: any) {
+  if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
+  try {
+    const { db } = await connectToDatabase();
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ success: false, error: 'Missing order id' });
+    const result = await db.collection("orders").deleteOne({ id });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+    res.status(200).json({ success: true });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+async function handleIncrementVisitors(req: any, res: any) {
+  if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
+  try {
+    const { db } = await connectToDatabase();
+    await db.collection("visitors").updateOne(
+      { id: "stats" },
+      { $inc: { count: 1 } },
+      { upsert: true }
+    );
+    res.status(200).json({ success: true });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+async function handleGetVisitorsCount(req: any, res: any) {
+  if (req.method !== 'GET') return res.status(405).json({ message: 'Method not allowed' });
+  try {
+    const { db } = await connectToDatabase();
+    const doc = await db.collection("visitors").findOne({ id: "stats" });
+    const count = doc ? doc.count : 0;
+    res.status(200).json({ success: true, count });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
 // ─── 12. ADMIN LOGIN ───────────────────────────────────────────────────────
 async function handleAdminLogin(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
@@ -1347,6 +1561,8 @@ export default async function handler(req: any, res: any) {
 
   try {
     switch (cleanPath) {
+      case '/api/cloudinary-signature':
+        return await handleGetCloudinarySignature(req, res);
       case '/api/get-products':
         return await handleGetProducts(req, res);
       case '/api/create-product':
@@ -1369,6 +1585,26 @@ export default async function handler(req: any, res: any) {
         return await handleCreateCheckoutSession(req, res);
       case '/api/send-contact-message':
         return await handleSendContactMessage(req, res);
+      case '/api/get-contact-messages':
+        return await handleGetContactMessages(req, res);
+      case '/api/delete-contact-message':
+        return await handleDeleteContactMessage(req, res);
+      case '/api/chat/start':
+        return await handleChatStart(req, res);
+      case '/api/chat/get':
+        return await handleChatGet(req, res);
+      case '/api/chat/send':
+        return await handleChatSend(req, res);
+      case '/api/chat/list':
+        return await handleChatList(req, res);
+      case '/api/chat/read':
+        return await handleChatRead(req, res);
+      case '/api/delete-order':
+        return await handleDeleteOrder(req, res);
+      case '/api/visitors/increment':
+        return await handleIncrementVisitors(req, res);
+      case '/api/visitors/count':
+        return await handleGetVisitorsCount(req, res);
       case '/api/admin/login':
         return await handleAdminLogin(req, res);
       case '/api/admin/change-password':

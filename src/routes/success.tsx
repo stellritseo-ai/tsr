@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Nav } from "@/components/site/Nav";
 import { Footer } from "@/components/site/Footer";
 import { CheckCircle2, ArrowRight, Instagram, Mail, Loader2 } from "lucide-react";
@@ -17,23 +17,30 @@ function SuccessPage() {
   const { clearCart } = useCart();
   const [confirming, setConfirming] = useState(false);
 
+  const calledRef = useRef(false);
+
   useEffect(() => {
     const pendingOrderStr = localStorage.getItem('tsr_pending_order');
-    if (pendingOrderStr) {
+    if (pendingOrderStr && !calledRef.current) {
+      calledRef.current = true;
       setConfirming(true);
       try {
         const order = JSON.parse(pendingOrderStr);
-        order.status = 'paid';
+        if (order.paymentMethod !== 'COD') {
+          order.status = 'paid';
+        }
         createOrder(order).then(() => {
           localStorage.removeItem('tsr_pending_order');
           clearCart();
           setConfirming(false);
         }).catch((err) => {
           console.error('Failed to confirm order:', err);
+          calledRef.current = false;
           setConfirming(false);
         });
       } catch (e) {
         console.error(e);
+        calledRef.current = false;
         setConfirming(false);
       }
     }

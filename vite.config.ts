@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
         configureServer(server) {
           server.middlewares.use(async (req, res, next) => {
             if (req.url?.startsWith('/api/')) {
-              const { MongoClient } = await import('mongodb');
+              const { MongoClient, ObjectId } = await import('mongodb');
               const client = new MongoClient(env.MONGODB_URI || '');
               
               try {
@@ -86,6 +86,45 @@ export default defineConfig(({ mode }) => {
                       await client.close();
                     }
                   });
+                  return;
+                }
+
+                if (req.url === '/api/cloudinary-signature' && (req.method === 'GET' || req.method === 'POST')) {
+                  try {
+                    const cloudName = env.CLOUDINARY_CLOUD_NAME || "q64fglez";
+                    const apiKey = env.CLOUDINARY_API_KEY || "858366267216782";
+                    const apiSecret = env.CLOUDINARY_API_SECRET || "Acl5fRzfRFq5jcyi9w68tx0Egic";
+
+                    if (!apiSecret) {
+                      res.statusCode = 500;
+                      res.setHeader('Content-Type', 'application/json');
+                      res.end(JSON.stringify({ success: false, error: "Cloudinary API Secret is missing in server environment" }));
+                      await client.close();
+                      return;
+                    }
+
+                    const timestamp = Math.round(new Date().getTime() / 1000);
+                    const folder = "tsr_products";
+
+                    const stringToSign = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
+                    const signature = crypto.createHash('sha1').update(stringToSign).digest('hex');
+
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({
+                      success: true,
+                      signature,
+                      timestamp,
+                      apiKey,
+                      cloudName,
+                      folder
+                    }));
+                  } catch (err: any) {
+                    res.statusCode = 500;
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({ success: false, error: err.message }));
+                  } finally {
+                    await client.close();
+                  }
                   return;
                 }
 
@@ -482,6 +521,276 @@ export default defineConfig(({ mode }) => {
                       await client.close();
                     }
                   });
+                  return;
+                }
+
+                if (req.url === '/api/get-contact-messages' && req.method === 'GET') {
+                  try {
+                    const messages = await db.collection("contact_messages").find({}).sort({ createdAt: -1 }).toArray();
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({ success: true, messages }));
+                  } catch (err: any) {
+                    res.statusCode = 500;
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({ success: false, error: err.message }));
+                  } finally {
+                    await client.close();
+                  }
+                  return;
+                }
+
+                if (req.url === '/api/delete-contact-message' && req.method === 'POST') {
+                  let body = '';
+                  req.on('data', chunk => { body += chunk; });
+                  req.on('end', async () => {
+                    try {
+                      const { id } = JSON.parse(body);
+                      if (!id) {
+                        res.statusCode = 400;
+                        res.setHeader('Content-Type', 'application/json');
+                        res.end(JSON.stringify({ success: false, error: 'Missing message ID' }));
+                        return;
+                      }
+
+                      const result = await db.collection("contact_messages").deleteOne({
+                        _id: new ObjectId(id)
+                      });
+                      res.setHeader('Content-Type', 'application/json');
+                      res.end(JSON.stringify({ success: true, deletedCount: result.deletedCount }));
+                    } catch (err: any) {
+                      res.statusCode = 500;
+                      res.setHeader('Content-Type', 'application/json');
+                      res.end(JSON.stringify({ success: false, error: err.message }));
+                    } finally {
+                      await client.close();
+                    }
+                  });
+                  return;
+                }
+
+                if (req.url === '/api/chat/start' && req.method === 'POST') {
+                  let body = '';
+                  req.on('data', chunk => { body += chunk; });
+                  req.on('end', async () => {
+                    try {
+                      const { customerName, customerEmail } = JSON.parse(body);
+                      if (!customerName || !customerEmail) {
+                        res.statusCode = 400;
+                        res.setHeader('Content-Type', 'application/json');
+                        res.end(JSON.stringify({ success: false, error: 'Missing name or email' }));
+                        return;
+                      }
+
+                      const chatId = `chat-${Math.floor(100000 + Math.random() * 900000)}`;
+                      const newChat = {
+                        id: chatId,
+                        customerName,
+                        customerEmail,
+                        lastMessage: "Consultation started",
+                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        unread: true,
+                        messages: [
+                          {
+                            sender: "admin",
+                            text: `Hello ${customerName}! Welcome to TSR Skin & Hair Care. How can we support your self-care ritual today?`,
+                            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                          }
+                        ]
+                      };
+
+                      await db.collection("chats").insertOne(newChat);
+                      res.setHeader('Content-Type', 'application/json');
+                      res.end(JSON.stringify({ success: true, chat: newChat }));
+                    } catch (err: any) {
+                      res.statusCode = 500;
+                      res.setHeader('Content-Type', 'application/json');
+                      res.end(JSON.stringify({ success: false, error: err.message }));
+                    } finally {
+                      await client.close();
+                    }
+                  });
+                  return;
+                }
+
+                if (req.url?.startsWith('/api/chat/get') && req.method === 'GET') {
+                  try {
+                    const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+                    const id = parsedUrl.searchParams.get('id');
+                    if (!id) {
+                      res.statusCode = 400;
+                      res.setHeader('Content-Type', 'application/json');
+                      res.end(JSON.stringify({ success: false, error: 'Missing chat ID' }));
+                      return;
+                    }
+
+                    const chat = await db.collection("chats").findOne({ id });
+                    if (!chat) {
+                      res.statusCode = 404;
+                      res.setHeader('Content-Type', 'application/json');
+                      res.end(JSON.stringify({ success: false, error: 'Chat not found' }));
+                      return;
+                    }
+
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({ success: true, chat }));
+                  } catch (err: any) {
+                    res.statusCode = 500;
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({ success: false, error: err.message }));
+                  } finally {
+                    await client.close();
+                  }
+                  return;
+                }
+
+                if (req.url === '/api/chat/send' && req.method === 'POST') {
+                  let body = '';
+                  req.on('data', chunk => { body += chunk; });
+                  req.on('end', async () => {
+                    try {
+                      const { chatId, sender, text } = JSON.parse(body);
+                      if (!chatId || !sender || !text) {
+                        res.statusCode = 400;
+                        res.setHeader('Content-Type', 'application/json');
+                        res.end(JSON.stringify({ success: false, error: 'Missing parameters' }));
+                        return;
+                      }
+
+                      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                      const newMessage = { sender, text, timestamp };
+
+                      const updateDoc: any = {
+                        $push: { messages: newMessage },
+                        $set: { 
+                          lastMessage: text,
+                          timestamp: timestamp
+                        }
+                      };
+
+                      if (sender === 'customer') {
+                        updateDoc.$set.unread = true;
+                      }
+
+                      await db.collection("chats").updateOne(
+                        { id: chatId },
+                        updateDoc
+                      );
+
+                      res.setHeader('Content-Type', 'application/json');
+                      res.end(JSON.stringify({ success: true }));
+                    } catch (err: any) {
+                      res.statusCode = 500;
+                      res.setHeader('Content-Type', 'application/json');
+                      res.end(JSON.stringify({ success: false, error: err.message }));
+                    } finally {
+                      await client.close();
+                    }
+                  });
+                  return;
+                }
+
+                if (req.url === '/api/chat/list' && req.method === 'GET') {
+                  try {
+                    const chats = await db.collection("chats").find({}).toArray();
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({ success: true, chats }));
+                  } catch (err: any) {
+                    res.statusCode = 500;
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({ success: false, error: err.message }));
+                  } finally {
+                    await client.close();
+                  }
+                  return;
+                }
+
+                if (req.url === '/api/chat/read' && req.method === 'POST') {
+                  let body = '';
+                  req.on('data', chunk => { body += chunk; });
+                  req.on('end', async () => {
+                    try {
+                      const { chatId } = JSON.parse(body);
+                      await db.collection("chats").updateOne(
+                        { id: chatId },
+                        { $set: { unread: false } }
+                      );
+                      res.setHeader('Content-Type', 'application/json');
+                      res.end(JSON.stringify({ success: true }));
+                    } catch (err: any) {
+                      res.statusCode = 500;
+                      res.setHeader('Content-Type', 'application/json');
+                      res.end(JSON.stringify({ success: false, error: err.message }));
+                    } finally {
+                      await client.close();
+                    }
+                  });
+                  return;
+                }
+
+                if (req.url === '/api/delete-order' && req.method === 'POST') {
+                  let body = '';
+                  req.on('data', (chunk: any) => { body += chunk; });
+                  req.on('end', async () => {
+                    try {
+                      const { id } = JSON.parse(body);
+                      if (!id) {
+                        res.statusCode = 400;
+                        res.setHeader('Content-Type', 'application/json');
+                        res.end(JSON.stringify({ success: false, error: 'Missing order id' }));
+                        return;
+                      }
+                      const result = await db.collection("orders").deleteOne({ id });
+                      if (result.deletedCount === 0) {
+                        res.statusCode = 404;
+                        res.setHeader('Content-Type', 'application/json');
+                        res.end(JSON.stringify({ success: false, error: 'Order not found' }));
+                        return;
+                      }
+                      res.setHeader('Content-Type', 'application/json');
+                      res.end(JSON.stringify({ success: true }));
+                    } catch (err: any) {
+                      res.statusCode = 500;
+                      res.setHeader('Content-Type', 'application/json');
+                      res.end(JSON.stringify({ success: false, error: err.message }));
+                    } finally {
+                      await client.close();
+                    }
+                  });
+                  return;
+                }
+
+                if (req.url === '/api/visitors/increment' && req.method === 'POST') {
+                  try {
+                    await db.collection("visitors").updateOne(
+                      { id: "stats" },
+                      { $inc: { count: 1 } },
+                      { upsert: true }
+                    );
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({ success: true }));
+                  } catch (err: any) {
+                    res.statusCode = 500;
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({ success: false, error: err.message }));
+                  } finally {
+                    await client.close();
+                  }
+                  return;
+                }
+
+                if (req.url === '/api/visitors/count' && req.method === 'GET') {
+                  try {
+                    const doc = await db.collection("visitors").findOne({ id: "stats" });
+                    const count = doc ? doc.count : 0;
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({ success: true, count }));
+                  } catch (err: any) {
+                    res.statusCode = 500;
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({ success: false, error: err.message }));
+                  } finally {
+                    await client.close();
+                  }
                   return;
                 }
 

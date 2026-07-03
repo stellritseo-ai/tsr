@@ -18,6 +18,7 @@ function CheckoutPage() {
   const { state } = useCart();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cod'>('card');
   const total = state.items.reduce((s, i) => s + i.price * i.quantity, 0);
   const totalOriginal = state.items.reduce((s, i) => s + (i.originalPrice || i.price) * i.quantity, 0);
   const savings = totalOriginal - total;
@@ -62,21 +63,27 @@ function CheckoutPage() {
         shipping: 0,
         total: grandTotal,
         status: 'pending',
+        paymentMethod: paymentMethod === 'cod' ? 'COD' : 'Stripe',
         date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
       };
 
-      // Save pending order to be created after Stripe payment
+      // Save pending order to be processed
       localStorage.setItem('tsr_pending_order', JSON.stringify(newOrder));
 
-      // Initiate Stripe Checkout
-      const session = await createCheckoutSession(state.items);
+      if (paymentMethod === 'cod') {
+        // Direct route to success page for Cash On Delivery orders
+        window.location.href = "/success";
+      } else {
+        // Initiate Stripe Checkout
+        const session = await createCheckoutSession(state.items);
 
-      if (session.error) {
-        throw new Error(session.error);
+        if (session.error) {
+          throw new Error(session.error);
+        }
+
+        // Redirect to Stripe (Cart cleared on success page)
+        window.location.href = session.url;
       }
-
-      // Redirect to Stripe (Cart cleared on success page)
-      window.location.href = session.url;
     } catch (err: any) {
       console.error("Checkout failed:", err);
       alert(`Checkout failed: ${err.message || "Something went wrong. Please try again."}`);
@@ -153,12 +160,21 @@ function CheckoutPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] tracking-widest uppercase text-muted-foreground px-1">Email Address</label>
-                  <input 
-                    required type="email" name="email" value={formData.email} onChange={handleInputChange}
-                    className="w-full bg-white border border-border/60 rounded-xl px-5 py-3.5 text-sm outline-none focus:border-accent/40 transition-all shadow-sm"
-                  />
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] tracking-widest uppercase text-muted-foreground px-1">Email Address</label>
+                    <input 
+                      required type="email" name="email" value={formData.email} onChange={handleInputChange}
+                      className="w-full bg-white border border-border/60 rounded-xl px-5 py-3.5 text-sm outline-none focus:border-accent/40 transition-all shadow-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] tracking-widest uppercase text-muted-foreground px-1">Phone Number</label>
+                    <input 
+                      required type="tel" name="phone" value={formData.phone} onChange={handleInputChange}
+                      className="w-full bg-white border border-border/60 rounded-xl px-5 py-3.5 text-sm outline-none focus:border-accent/40 transition-all shadow-sm"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -192,11 +208,53 @@ function CheckoutPage() {
                   <div className="size-8 rounded-full bg-accent/10 flex items-center justify-center">
                     <CreditCard className="size-4 text-accent" />
                   </div>
-                  <h2 className="font-display text-2xl">Payment</h2>
+                  <h2 className="font-display text-2xl">Payment Method</h2>
                 </div>
-                <div className="p-6 rounded-2xl bg-white border border-accent ring-1 ring-accent shadow-sm">
-                  <div className="font-display text-lg">Secure Card Payment</div>
-                  <div className="text-[10px] tracking-widest uppercase text-muted-foreground mt-1">Credit Card · Debit Card · Apple Pay · Google Pay</div>
+                
+                <div className="grid gap-4 sm:grid-cols-2 text-left">
+                  {/* Card Option */}
+                  <div
+                    onClick={() => setPaymentMethod("card")}
+                    className={`p-6 rounded-2xl bg-white border-2 cursor-pointer transition-all duration-300 ${
+                      paymentMethod === "card"
+                        ? "border-accent shadow-sm ring-1 ring-accent"
+                        : "border-border/60 hover:border-accent/40"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-display text-lg">Secure Card Payment</span>
+                      <div className={`size-4 rounded-full border flex items-center justify-center ${
+                        paymentMethod === "card" ? "border-accent bg-accent" : "border-border"
+                      }`}>
+                        {paymentMethod === "card" && <div className="size-2 rounded-full bg-white" />}
+                      </div>
+                    </div>
+                    <div className="text-[10px] tracking-widest uppercase text-muted-foreground leading-relaxed">
+                      Credit Card · Debit Card · Apple Pay · Google Pay
+                    </div>
+                  </div>
+
+                  {/* COD Option */}
+                  <div
+                    onClick={() => setPaymentMethod("cod")}
+                    className={`p-6 rounded-2xl bg-white border-2 cursor-pointer transition-all duration-300 ${
+                      paymentMethod === "cod"
+                        ? "border-accent shadow-sm ring-1 ring-accent"
+                        : "border-border/60 hover:border-accent/40"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-display text-lg">Cash On Delivery</span>
+                      <div className={`size-4 rounded-full border flex items-center justify-center ${
+                        paymentMethod === "cod" ? "border-accent bg-accent" : "border-border"
+                      }`}>
+                        {paymentMethod === "cod" && <div className="size-2 rounded-full bg-white" />}
+                      </div>
+                    </div>
+                    <div className="text-[10px] tracking-widest uppercase text-muted-foreground leading-relaxed">
+                      Pay cash at your doorstep · No extra processing fees
+                    </div>
+                  </div>
                 </div>
               </section>
 

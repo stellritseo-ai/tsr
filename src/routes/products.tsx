@@ -168,25 +168,29 @@ function ProductsPage() {
                   <div key={product.id} className={`flex flex-col lg:flex-row gap-16 items-center animate-fade-up [animation-delay:${i * 100}ms]`}>
                     {/* IMAGE - LEFT SIDE */}
                     <div className="relative shrink-0 w-full lg:w-[500px] h-[500px] rounded-3xl overflow-hidden shadow-soft transition-all duration-700 group hover:shadow-luxe">
-                      <img src={product.image} alt={product.name} className="size-full object-cover transition-transform duration-[2s] group-hover:scale-110" />
-                      <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <Link to="/product/$productId" params={{ productId: product.id }} className="block size-full cursor-pointer">
+                        <img src={product.image} alt={product.name} className="size-full object-cover transition-transform duration-[2s] group-hover:scale-110" />
+                      </Link>
+                      <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                       <div className="absolute top-6 right-6 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                         <span className="glass px-3 py-1.5 rounded-full text-[10px] tracking-widest uppercase text-ink/80 backdrop-blur-md">
                           {product.category}
                         </span>
                       </div>
                     </div>
-
+ 
                     {/* CONTENT - RIGHT SIDE */}
                     <div className="flex-1 space-y-8">
                       <div className="space-y-4">
                         <div className="flex justify-between items-baseline border-b border-border/40 pb-6">
-                          <h3 className="font-display text-4xl md:text-5xl">{product.name}</h3>
+                          <Link to="/product/$productId" params={{ productId: product.id }} className="hover:text-accent transition-colors no-underline">
+                            <h3 className="font-display text-4xl md:text-5xl">{product.name}</h3>
+                          </Link>
                           {product.originalPrice ? (
                             <span className="flex items-center gap-3">
                               <span className="line-through text-muted-foreground/60 text-2xl font-light">${product.originalPrice.toFixed(2)}</span>
                               <span className="font-display text-3xl text-gold">${product.price.toFixed(2)}</span>
-                              <span className="glass px-2.5 py-1 rounded-full text-[9px] font-bold text-emerald-600 bg-emerald-50 tracking-wider uppercase">50% Off</span>
+                              <span className="glass px-2.5 py-1 rounded-full text-[9px] font-bold text-emerald-600 bg-emerald-50 tracking-wider uppercase font-sans">50% Off</span>
                             </span>
                           ) : (
                             <span className="font-display text-3xl text-accent">${product.price}</span>
@@ -220,11 +224,18 @@ function ProductsPage() {
                         <div className="pt-8 flex items-center gap-6">
                           <button
                             onClick={() => handleAddToCart(product)}
-                            className="bg-ink text-white px-10 py-5 rounded-full text-[10px] tracking-[0.4em] uppercase font-bold hover:bg-accent transition-all duration-500 shadow-luxe flex items-center gap-3"
+                            className="bg-ink text-white px-10 py-5 rounded-full text-[10px] tracking-[0.4em] uppercase font-bold hover:bg-accent transition-all duration-500 shadow-luxe flex items-center gap-3 cursor-pointer border-none"
                           >
                             <ShoppingBag className="size-4" />
                             Add To Cart
                           </button>
+                          <Link
+                            to="/product/$productId"
+                            params={{ productId: product.id }}
+                            className="border border-ink/40 text-ink px-10 py-5 rounded-full text-[10px] tracking-[0.4em] uppercase font-bold hover:bg-ink hover:text-white transition-all duration-500 shadow-soft flex items-center gap-2 no-underline"
+                          >
+                            View Details
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -246,13 +257,15 @@ function ProductsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {liveProducts.slice(0, 3).map((p) => (
-                <div key={p.id} className="group space-y-6">
-                  <div className="aspect-square rounded-3xl overflow-hidden shadow-soft">
+                 <div key={p.id} className="group space-y-6">
+                  <Link to="/product/$productId" params={{ productId: p.id }} className="block aspect-square rounded-3xl overflow-hidden shadow-soft cursor-pointer">
                     <img src={p.image} alt={p.name} className="size-full object-cover transition-transform duration-[1.5s] group-hover:scale-110" />
-                  </div>
+                  </Link>
                   <div className="space-y-2">
                     <div className="flex justify-between items-baseline">
-                      <h3 className="font-display text-2xl">{p.name}</h3>
+                      <Link to="/product/$productId" params={{ productId: p.id }} className="hover:text-accent transition-colors no-underline block">
+                        <h3 className="font-display text-2xl text-ink">{p.name}</h3>
+                      </Link>
                       {p.originalPrice ? (
                         <span className="text-right">
                           <span className="text-xs line-through text-muted-foreground/60 mr-2">${p.originalPrice.toFixed(2)}</span>
@@ -262,13 +275,22 @@ function ProductsPage() {
                         <span className="text-accent">${p.price}</span>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2 italic font-serif">{p.description}</p>
-                    <button
-                      onClick={() => handleAddToCart(p)}
-                      className="text-[10px] tracking-[0.3em] uppercase font-bold pt-4 hover:text-accent transition-colors flex items-center gap-2"
-                    >
-                      Quick Add <ArrowRight className="size-3" />
-                    </button>
+                    <p className="text-sm text-muted-foreground line-clamp-2 italic font-serif text-left">{p.description}</p>
+                    <div className="flex items-center justify-between pt-4">
+                      <button
+                        onClick={() => handleAddToCart(p)}
+                        className="text-[10px] tracking-[0.3em] uppercase font-bold hover:text-accent transition-colors flex items-center gap-2 border-none bg-transparent cursor-pointer"
+                      >
+                        Quick Add <ArrowRight className="size-3" />
+                      </button>
+                      <Link
+                        to="/product/$productId"
+                        params={{ productId: p.id }}
+                        className="text-[10px] tracking-[0.3em] uppercase font-bold text-muted-foreground hover:text-ink transition-colors no-underline"
+                      >
+                        View Ritual
+                      </Link>
+                    </div>
                   </div>
                 </div>
               ))}

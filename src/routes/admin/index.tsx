@@ -2,11 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
 import {
   Package, Users, ShoppingCart, TrendingUp,
-  Search, Filter, ExternalLink, Clock, CheckCircle2,
+  Search, Filter, ExternalLink, Clock, CheckCircle2, Eye,
   AlertCircle, ChevronRight, BarChart3, Plus, Edit2,
   Trash2, X, PlusCircle, UserCheck, DollarSign, Calendar, MapPin,
   Phone, Mail, ArrowRight, ArrowUpRight, Award, FileText, Settings, Sparkles, Loader2,
-  Lock, User, LogOut, ShieldCheck, KeyRound
+  Lock, User, LogOut, ShieldCheck, KeyRound, MessageSquare, Inbox, Send, Reply, MailOpen
 } from "lucide-react";
 
 import {
@@ -19,7 +19,15 @@ import {
   getManualCustomers,
   createManualCustomer,
   adminLogin,
-  changeAdminPassword
+  changeAdminPassword,
+  getCloudinarySignature,
+  getContactMessages,
+  deleteContactMessage,
+  getChatThreads,
+  sendChatMessage,
+  readChatThread,
+  getVisitorsCount,
+  deleteOrder
 } from "@/lib/serverFunctions";
 import { Order } from "@/types/order";
 import { products as staticProducts, Product } from "@/data/products";
@@ -59,6 +67,34 @@ const PRESET_IMAGES = [
   { name: "TSR™ Bald Spot Oil", url: menOilImg },
 ];
 
+interface SupportEmail {
+  id: string;
+  senderName: string;
+  senderEmail: string;
+  subject: string;
+  body: string;
+  date: string;
+  isRead: boolean;
+  category: "order" | "product" | "general";
+  replies?: string[];
+}
+
+interface ChatMessage {
+  sender: "customer" | "admin";
+  text: string;
+  timestamp: string;
+}
+
+interface ChatThread {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  lastMessage: string;
+  timestamp: string;
+  unread: boolean;
+  messages: ChatMessage[];
+}
+
 function AdminDashboard() {
   // Authentication Guard states
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -70,6 +106,18 @@ function AdminDashboard() {
 
   // Tab control
   const [activeTab, setActiveTab] = useState("dashboard");
+
+  // Web Email state
+  const [emails, setEmails] = useState<SupportEmail[]>([]);
+  const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
+  const [emailReplyText, setEmailReplyText] = useState("");
+  const [emailCategoryFilter, setEmailCategoryFilter] = useState<"all" | "order" | "product" | "general">("all");
+
+  // Live Chat state
+  const [chats, setChats] = useState<ChatThread[]>([]);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [chatInputText, setChatInputText] = useState("");
+  const [visitorCount, setVisitorCount] = useState<number>(0);
 
   // Database datasets state
   const [orders, setOrders] = useState<Order[]>([]);
@@ -136,6 +184,58 @@ function AdminDashboard() {
     setTimeout(() => setToast(null), 4000);
   };
 
+  // Cloudinary image uploading state
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    try {
+      const signatureData = await getCloudinarySignature();
+      if (!signatureData || !signatureData.success) {
+        showToast(signatureData.error || "Failed to retrieve Cloudinary signature", "error");
+        setIsUploadingImage(false);
+        return;
+      }
+
+      const { signature, timestamp, apiKey, cloudName, folder } = signatureData;
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", folder);
+      formData.append("timestamp", timestamp.toString());
+      formData.append("api_key", apiKey);
+      formData.append("signature", signature);
+
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: "POST",
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData?.error?.message || "Upload to Cloudinary failed");
+      }
+
+      const uploadResult = await response.json();
+      
+      setProductForm(prev => ({
+        ...prev,
+        imageCustom: uploadResult.secure_url,
+        useCustomImage: true
+      }));
+      
+      showToast("Product image uploaded to Cloudinary");
+    } catch (error: any) {
+      console.error("Cloudinary upload error:", error);
+      showToast(error.message || "Failed to upload image to Cloudinary", "error");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   // CHECK ACTIVE SESSION ON MOUNT
   useEffect(() => {
     const session = localStorage.getItem("tsr_admin_session");
@@ -153,10 +253,13 @@ function AdminDashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [fetchedOrders, fetchedProducts, fetchedCustomers] = await Promise.all([
+      const [fetchedOrders, fetchedProducts, fetchedCustomers, fetchedEmails, fetchedChats, fetchedVisitors] = await Promise.all([
         getOrders(),
         getProducts(),
         getManualCustomers(),
+        getContactMessages(),
+        getChatThreads(),
+        getVisitorsCount()
       ]);
 
       const resolvedProducts = (fetchedProducts as Product[]).map(p => {
@@ -190,9 +293,65 @@ function AdminDashboard() {
         };
       });
 
+      // Map dynamic contact messages to SupportEmail interface
+      let mappedEmails: SupportEmail[] = [];
+      if (fetchedEmails && fetchedEmails.success && Array.isArray(fetchedEmails.messages)) {
+        mappedEmails = fetchedEmails.messages.map((msg: any) => ({
+          id: msg._id || msg.id,
+          senderName: msg.name || "Anonymous",
+          senderEmail: msg.email || "no-reply@example.com",
+          subject: msg.subject || "Support Request",
+          body: msg.message || "",
+          date: msg.createdAt ? new Date(msg.createdAt).toLocaleString('en-US', {
+            month: '2-digit',
+            day: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }) : "Date Unknown",
+          isRead: msg.isRead || false,
+          category: msg.category || "general",
+          replies: msg.replies || []
+        }));
+      }
+
+      // Map dynamic chat threads
+      let mappedChats: ChatThread[] = [];
+      if (fetchedChats && fetchedChats.success && Array.isArray(fetchedChats.chats)) {
+        mappedChats = fetchedChats.chats.map((c: any) => ({
+          id: c.id,
+          customerName: c.customerName || "Guest",
+          customerEmail: c.customerEmail || "",
+          lastMessage: c.lastMessage || "",
+          timestamp: c.timestamp || "",
+          unread: c.unread ?? false,
+          messages: c.messages || []
+        }));
+      }
+
       setOrders(resolvedOrders);
       setProducts(resolvedProducts);
       setManualCustomers(fetchedCustomers);
+      setEmails(mappedEmails);
+      setChats(mappedChats);
+
+      if (fetchedVisitors && fetchedVisitors.success) {
+        setVisitorCount(fetchedVisitors.count || 0);
+      }
+
+      // Select the first email automatically if none is selected
+      if (mappedEmails.length > 0) {
+        setSelectedEmailId(mappedEmails[0].id);
+      } else {
+        setSelectedEmailId(null);
+      }
+
+      // Select the first chat automatically if none is selected
+      if (mappedChats.length > 0) {
+        setSelectedChatId(mappedChats[0].id);
+      } else {
+        setSelectedChatId(null);
+      }
     } catch (e) {
       console.error("Failed to load admin panel data", e);
       showToast("Error retrieving live database data", "error");
@@ -200,6 +359,33 @@ function AdminDashboard() {
       setLoading(false);
     }
   };
+
+  // Poll for live chats when the chat tab is active
+  useEffect(() => {
+    if (activeTab !== "chat" || !isAuthenticated) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const fetchedChats = await getChatThreads();
+        if (fetchedChats && fetchedChats.success && Array.isArray(fetchedChats.chats)) {
+          const mappedChats = fetchedChats.chats.map((c: any) => ({
+            id: c.id,
+            customerName: c.customerName || "Guest",
+            customerEmail: c.customerEmail || "",
+            lastMessage: c.lastMessage || "",
+            timestamp: c.timestamp || "",
+            unread: c.unread ?? false,
+            messages: c.messages || []
+          }));
+          setChats(mappedChats);
+        }
+      } catch (err) {
+        console.error("Error polling chat threads:", err);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [activeTab, isAuthenticated]);
 
   // ADMIN LOGIN FLOW
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -233,6 +419,7 @@ function AdminDashboard() {
     setOrders([]);
     setProducts([]);
     setManualCustomers([]);
+    setEmails([]);
     setLoginUsername("");
     setLoginPassword("");
     setLoginError("");
@@ -681,7 +868,7 @@ function AdminDashboard() {
       <div className="flex">
 
         {/* SIDEBAR */}
-        <aside className="w-64 min-h-screen bg-ink text-white p-8 space-y-12 sticky top-0 hidden lg:flex flex-col justify-between border-r border-white/5">
+        <aside className="w-64 h-screen bg-ink text-white p-8 space-y-12 sticky top-0 hidden lg:flex flex-col justify-between border-r border-white/5 self-start overflow-y-auto">
           <div className="space-y-12">
             <div className="font-display text-3xl flex items-center gap-2">
               TSR<span className="text-accent text-gold font-serif">.</span> Admin
@@ -719,6 +906,28 @@ function AdminDashboard() {
                 <Users className="size-4" /> Customers
               </button>
               <button
+                onClick={() => { setActiveTab("email"); setSearchTerm(""); }}
+                className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all ${activeTab === "email" ? "bg-white/10 text-white font-medium shadow-soft" : "text-white/50 hover:text-white"}`}
+              >
+                <Inbox className="size-4" /> Web Email
+                {emails.filter(e => !e.isRead).length > 0 && (
+                  <span className="ml-auto size-5 bg-gold text-ink text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {emails.filter(e => !e.isRead).length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => { setActiveTab("chat"); setSearchTerm(""); }}
+                className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all ${activeTab === "chat" ? "bg-white/10 text-white font-medium shadow-soft" : "text-white/50 hover:text-white"}`}
+              >
+                <MessageSquare className="size-4" /> Live Chat
+                {chats.filter(c => c.unread).length > 0 && (
+                  <span className="ml-auto size-5 bg-emerald-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                    {chats.filter(c => c.unread).length}
+                  </span>
+                )}
+              </button>
+              <button
                 onClick={() => { setActiveTab("settings"); setSearchTerm(""); }}
                 className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all ${activeTab === "settings" ? "bg-white/10 text-white font-medium shadow-soft" : "text-white/50 hover:text-white"}`}
               >
@@ -754,6 +963,8 @@ function AdminDashboard() {
                 {activeTab === "orders" && "Fulfillment Center"}
                 {activeTab === "products" && "Catalog Management"}
                 {activeTab === "customers" && "Customer Directory"}
+                {activeTab === "email" && "Web Support Mailbox"}
+                {activeTab === "chat" && "Live Customer Chat"}
                 {activeTab === "settings" && "Security Settings"}
               </h1>
               <p className="text-muted-foreground text-sm">
@@ -761,6 +972,8 @@ function AdminDashboard() {
                 {activeTab === "orders" && "Review, fulfill, and update client rituals."}
                 {activeTab === "products" && "Add new botanical formulations and manage stock prices."}
                 {activeTab === "customers" && "Nurture high-profile client purchasing histories."}
+                {activeTab === "email" && "View incoming customer inquiries, send responses, and manage tickets."}
+                {activeTab === "chat" && "Engage with online customers in real-time support threads."}
                 {activeTab === "settings" && "Manage administrator credentials and database settings."}
               </p>
             </div>
@@ -798,12 +1011,13 @@ function AdminDashboard() {
           </header>
 
           {/* METRICS ROW */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             {[
               { label: "Total Revenue", val: `$${metrics.totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: TrendingUp, color: "text-emerald-600 bg-emerald-50", desc: "Lifetime order billing" },
               { label: "Active Orders", val: String(metrics.activeOrders), icon: Clock, color: "text-amber-600 bg-amber-50", desc: "Awaiting dispatch status" },
               { label: "Rituals Shipped", val: String(metrics.shippedRituals), icon: CheckCircle2, color: "text-blue-600 bg-blue-50", desc: "Fulfilled packages" },
               { label: "Customer Base", val: String(metrics.customerBase), icon: Users, color: "text-gold bg-amber-50/40", desc: "VIP customer accounts" },
+              { label: "Website Visitor", val: String(visitorCount), icon: Eye, color: "text-indigo-600 bg-indigo-50", desc: "Total unique sessions" },
             ].map((stat, i) => (
               <div key={i} className="bg-white p-6 rounded-2xl border border-border/40 shadow-sm space-y-4 hover:shadow-soft transition-all duration-300 group">
                 <div className="flex items-center justify-between">
@@ -1358,6 +1572,468 @@ function AdminDashboard() {
 
                 </div>
               )}
+
+              {/* ──────────────────────────────────────────────────────── WEB EMAIL TAB ─────────────────────────────────────────────────────────────── */}
+              {activeTab === "email" && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[calc(100vh-220px)] animate-fade-up">
+                  
+                  {/* Left Column: Inbox List */}
+                  <div className="lg:col-span-4 bg-white rounded-3xl border border-border/40 shadow-sm flex flex-col overflow-hidden h-full">
+                    {/* Inbox Header / Filters */}
+                    <div className="p-6 border-b border-border/20 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-display text-lg flex items-center gap-2">
+                          <Inbox className="size-5 text-gold" /> Inbox
+                        </h3>
+                        <span className="text-[10px] bg-secondary/35 px-2.5 py-1 rounded-full font-bold text-ink/75 font-mono">
+                          {emails.filter(e => !e.isRead).length} Unread
+                        </span>
+                      </div>
+                      
+                      <div className="flex gap-1.5 overflow-x-auto pb-1">
+                        {(["all", "order", "product", "general"] as const).map((cat) => (
+                          <button
+                            key={cat}
+                            onClick={() => setEmailCategoryFilter(cat)}
+                            className={`px-3 py-1.5 rounded-full text-[10px] tracking-wider uppercase font-bold transition-all whitespace-nowrap cursor-pointer ${
+                              emailCategoryFilter === cat
+                                ? "bg-ink text-white shadow-sm"
+                                : "bg-secondary/15 text-muted-foreground hover:bg-secondary/30"
+                            }`}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Email List Scrollable container */}
+                    <div className="flex-1 overflow-y-auto divide-y divide-border/10">
+                      {emails
+                        .filter(e => emailCategoryFilter === "all" || e.category === emailCategoryFilter)
+                        .filter(e => 
+                          searchTerm === "" ||
+                          e.senderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          e.senderEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          e.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          e.body.toLowerCase().includes(searchTerm.toLowerCase())
+                        )
+                        .map((email) => (
+                          <div
+                            key={email.id}
+                            onClick={() => {
+                              setSelectedEmailId(email.id);
+                              // Mark as read
+                              setEmails(prev => prev.map(e => e.id === email.id ? { ...e, isRead: true } : e));
+                            }}
+                            className={`p-5 text-left cursor-pointer transition-all flex gap-3 relative border-l-4 ${
+                              selectedEmailId === email.id
+                                ? "bg-[#FAF7F2] border-gold"
+                                : "border-transparent hover:bg-secondary/5"
+                            } ${!email.isRead ? "font-bold" : ""}`}
+                          >
+                            {!email.isRead && (
+                              <div className="absolute right-4 top-5 size-2 bg-gold rounded-full" />
+                            )}
+                            <div className="flex-1 space-y-1.5 min-w-0">
+                              <div className="flex justify-between items-baseline gap-2">
+                                <span className="text-xs truncate text-ink font-medium">
+                                  {email.senderName}
+                                </span>
+                                <span className="text-[9px] text-muted-foreground font-mono font-medium shrink-0">
+                                  {email.date.split(" ")[0]}
+                                </span>
+                              </div>
+                              <div className="text-xs text-ink/80 truncate font-semibold">
+                                {email.subject}
+                              </div>
+                              <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed font-sans font-medium">
+                                {email.body}
+                              </p>
+                              
+                              <div className="flex gap-2 pt-1">
+                                <span className={`text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                                  email.category === "order"
+                                    ? "bg-blue-50 text-blue-700 border border-blue-200/50"
+                                    : email.category === "product"
+                                    ? "bg-amber-50 text-amber-700 border border-amber-200/50"
+                                    : "bg-slate-50 text-slate-700 border border-slate-200/50"
+                                }`}>
+                                  {email.category}
+                                </span>
+                                {email.replies && email.replies.length > 0 && (
+                                  <span className="text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/50 flex items-center gap-0.5 font-sans">
+                                    <CheckCircle2 className="size-2" /> Replied
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      
+                      {emails
+                        .filter(e => emailCategoryFilter === "all" || e.category === emailCategoryFilter)
+                        .filter(e => 
+                          searchTerm === "" ||
+                          e.senderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          e.senderEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          e.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          e.body.toLowerCase().includes(searchTerm.toLowerCase())
+                        ).length === 0 && (
+                          <div className="p-8 text-center text-xs text-muted-foreground italic font-serif">
+                            No matching support emails found.
+                          </div>
+                        )}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Reading & Reply Pane */}
+                  <div className="lg:col-span-8 bg-white rounded-3xl border border-border/40 shadow-sm flex flex-col overflow-hidden h-full">
+                    {(() => {
+                      const selectedEmail = emails.find(e => e.id === selectedEmailId);
+                      if (!selectedEmail) {
+                        return (
+                          <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-3 font-serif">
+                            <MailOpen className="size-10 text-muted-foreground/30" />
+                            <div className="text-sm italic text-muted-foreground">Select an email from the inbox to read its details.</div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="flex-1 flex flex-col h-full overflow-hidden">
+                          {/* Pane Header */}
+                          <div className="p-6 border-b border-border/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="space-y-1">
+                              <h4 className="font-display text-lg text-ink leading-tight">{selectedEmail.subject}</h4>
+                              <div className="flex flex-wrap items-center gap-2 text-xs">
+                                <span className="font-bold text-ink">{selectedEmail.senderName}</span>
+                                <span className="text-muted-foreground font-mono">&lt;{selectedEmail.senderEmail}&gt;</span>
+                                <span className="text-muted-foreground">•</span>
+                                <span className="text-muted-foreground font-mono">{selectedEmail.date}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className={`text-[9px] font-bold uppercase tracking-wider px-3 py-1 rounded-full ${
+                                selectedEmail.category === "order"
+                                  ? "bg-blue-50 text-blue-700 border border-blue-200/50"
+                                  : selectedEmail.category === "product"
+                                  ? "bg-amber-50 text-amber-700 border border-amber-200/50"
+                                  : "bg-slate-50 text-slate-700 border border-slate-200/50"
+                              }`}>
+                                {selectedEmail.category}
+                              </span>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const result = await deleteContactMessage(selectedEmail.id);
+                                    if (result && result.success) {
+                                      setEmails(prev => prev.filter(e => e.id !== selectedEmail.id));
+                                      setSelectedEmailId(null);
+                                      showToast("Email ticket deleted from database");
+                                    } else {
+                                      showToast(result.error || "Failed to delete ticket from database", "error");
+                                    }
+                                  } catch (err: any) {
+                                    showToast("Network error deleting ticket", "error");
+                                  }
+                                }}
+                                className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-all cursor-pointer border-none"
+                                title="Delete Ticket"
+                              >
+                                <Trash2 className="size-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Message Body & History Scroll Container */}
+                          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                            {/* Customer Message */}
+                            <div className="bg-[#FDFCF9] p-6 rounded-2xl border border-border/30 space-y-4">
+                              <div className="flex items-center justify-between border-b border-border/20 pb-2">
+                                <span className="text-[10px] tracking-wider uppercase text-muted-foreground font-bold">Client Support Ticket</span>
+                                <span className="text-[9px] text-muted-foreground font-mono font-medium">{selectedEmail.date}</span>
+                              </div>
+                              <p className="text-xs text-ink/80 leading-relaxed whitespace-pre-line font-sans font-medium text-left">
+                                {selectedEmail.body}
+                              </p>
+                            </div>
+
+                            {/* Replies History */}
+                            {selectedEmail.replies && selectedEmail.replies.map((reply, index) => (
+                              <div key={index} className="bg-emerald-500/5 p-6 rounded-2xl border border-emerald-500/20 space-y-4 ml-6">
+                                <div className="flex items-center justify-between border-b border-emerald-500/10 pb-2">
+                                  <span className="text-[10px] tracking-wider uppercase text-emerald-700 font-bold flex items-center gap-1 font-sans">
+                                    <UserCheck className="size-3" /> Master Admin Reply
+                                  </span>
+                                  <span className="text-[9px] text-emerald-600 font-mono font-medium">Sent</span>
+                                </div>
+                                <p className="text-xs text-ink/80 leading-relaxed whitespace-pre-line font-sans font-medium text-left">
+                                  {reply}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Reply Compose Form */}
+                          <div className="p-6 border-t border-border/20 bg-[#FAF7F2]">
+                            <form
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                if (!emailReplyText.trim()) return;
+                                
+                                setEmails(prev => prev.map(em => {
+                                  if (em.id === selectedEmail.id) {
+                                    return {
+                                      ...em,
+                                      replies: [...(em.replies || []), emailReplyText.trim()]
+                                    };
+                                  }
+                                  return em;
+                                }));
+                                setEmailReplyText("");
+                                showToast("Reply sent to customer inbox");
+                              }}
+                              className="space-y-3"
+                            >
+                              <div className="relative">
+                                <textarea
+                                  placeholder={`Write a professional support response to ${selectedEmail.senderName}...`}
+                                  value={emailReplyText}
+                                  onChange={(e) => setEmailReplyText(e.target.value)}
+                                  className="w-full min-h-[90px] bg-white border border-border/40 focus:border-gold/40 rounded-2xl p-4 text-xs outline-none shadow-sm font-sans font-medium leading-relaxed resize-none text-ink"
+                                  required
+                                />
+                              </div>
+                              <div className="flex justify-end items-center gap-3">
+                                <span className="text-[10px] text-muted-foreground font-mono font-medium">
+                                  Sending from: support@tsrbotanicals.com
+                                </span>
+                                <button
+                                  type="submit"
+                                  className="bg-ink text-white px-5 py-2.5 rounded-full text-[10px] tracking-wider uppercase font-bold hover:bg-gold transition shadow-soft flex items-center gap-2 cursor-pointer"
+                                >
+                                  <Reply className="size-3.5" /> Send Reply
+                                </button>
+                              </div>
+                            </form>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* ──────────────────────────────────────────────────────── LIVE CHAT TAB ─────────────────────────────────────────────────────────────── */}
+              {activeTab === "chat" && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[calc(100vh-220px)] animate-fade-up">
+                  
+                  {/* Left Column: Active Chats List */}
+                  <div className="lg:col-span-4 bg-white rounded-3xl border border-border/40 shadow-sm flex flex-col overflow-hidden h-full">
+                    {/* Chat Header */}
+                    <div className="p-6 border-b border-border/20 flex items-center justify-between bg-white">
+                      <div className="space-y-0.5 text-left">
+                        <h3 className="font-display text-lg flex items-center gap-2">
+                          <MessageSquare className="size-5 text-gold" /> Live Support
+                        </h3>
+                        <div className="text-[10px] text-muted-foreground flex items-center gap-1 font-sans font-medium">
+                          <span className="size-1.5 bg-emerald-500 rounded-full inline-block animate-ping" />
+                          <span>3 clients active now</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200/50 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider font-mono">
+                        Console
+                      </span>
+                    </div>
+
+                    {/* Chats List */}
+                    <div className="flex-1 overflow-y-auto divide-y divide-border/10">
+                      {chats
+                        .filter(c => 
+                          searchTerm === "" ||
+                          c.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          c.customerEmail.toLowerCase().includes(searchTerm.toLowerCase())
+                        )
+                        .map((chat) => (
+                          <div
+                            key={chat.id}
+                            onClick={async () => {
+                              setSelectedChatId(chat.id);
+                              setChats(prev => prev.map(c => c.id === chat.id ? { ...c, unread: false } : c));
+                              try {
+                                await readChatThread(chat.id);
+                              } catch (err) {
+                                console.error("Failed to mark chat as read:", err);
+                              }
+                            }}
+                            className={`p-5 text-left cursor-pointer transition-all flex gap-3 relative border-l-4 ${
+                              selectedChatId === chat.id
+                                ? "bg-[#FAF7F2] border-gold"
+                                : "border-transparent hover:bg-secondary/5"
+                            }`}
+                          >
+                            <div className="relative shrink-0">
+                              <div className="size-9 rounded-full bg-secondary/35 flex items-center justify-center text-xs font-bold text-ink uppercase font-serif">
+                                {chat.customerName.split(" ").map(n => n[0]).join("")}
+                              </div>
+                              <span className="absolute -bottom-0.5 -right-0.5 size-2.5 bg-emerald-500 border border-white rounded-full" />
+                            </div>
+
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <div className="flex justify-between items-baseline gap-2">
+                                <span className="text-xs truncate text-ink font-semibold">
+                                  {chat.customerName}
+                                </span>
+                                <span className="text-[9px] text-muted-foreground font-mono font-medium shrink-0">
+                                  {chat.timestamp}
+                                </span>
+                              </div>
+                              <p className={`text-[11px] truncate leading-relaxed font-sans font-medium ${
+                                chat.unread ? "text-ink font-bold" : "text-muted-foreground"
+                              }`}>
+                                {chat.lastMessage}
+                              </p>
+                            </div>
+
+                            {chat.unread && (
+                              <div className="size-2 bg-emerald-500 rounded-full self-center shrink-0" />
+                            )}
+                          </div>
+                        ))}
+
+                      {chats
+                        .filter(c => 
+                          searchTerm === "" ||
+                          c.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          c.customerEmail.toLowerCase().includes(searchTerm.toLowerCase())
+                        ).length === 0 && (
+                          <div className="p-8 text-center text-xs text-muted-foreground italic font-serif">
+                            No active chat channels found.
+                          </div>
+                        )}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Chat Console */}
+                  <div className="lg:col-span-8 bg-white rounded-3xl border border-border/40 shadow-sm flex flex-col overflow-hidden h-full">
+                    {(() => {
+                      const selectedChat = chats.find(c => c.id === selectedChatId);
+                      if (!selectedChat) {
+                        return (
+                          <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-3 font-serif">
+                            <MessageSquare className="size-10 text-muted-foreground/30 animate-pulse" />
+                            <div className="text-sm italic text-muted-foreground">Select a client thread to initialize support console.</div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="flex-1 flex flex-col h-full overflow-hidden">
+                          {/* Chat Console Header */}
+                          <div className="p-6 border-b border-border/20 flex items-center justify-between bg-white">
+                            <div className="flex items-center gap-3">
+                              <div className="relative">
+                                <div className="size-10 rounded-full bg-ink text-white flex items-center justify-center text-sm font-serif font-bold">
+                                  {selectedChat.customerName.split(" ").map(n => n[0]).join("")}
+                                </div>
+                                <span className="absolute bottom-0 right-0 size-3 bg-emerald-500 border border-white rounded-full animate-pulse" />
+                              </div>
+                              <div className="space-y-0.5 text-left">
+                                <h4 className="text-sm font-bold text-ink">{selectedChat.customerName}</h4>
+                                <p className="text-[10px] text-muted-foreground font-mono font-medium">{selectedChat.customerEmail}</p>
+                              </div>
+                            </div>
+                            <span className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-200/50 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider font-mono flex items-center gap-1">
+                              <span className="size-1.5 bg-emerald-500 rounded-full animate-ping" /> Connection Established
+                            </span>
+                          </div>
+
+                          {/* Message Bubbles Container */}
+                          <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#FDFCF9]">
+                            {selectedChat.messages.map((msg, index) => (
+                              <div
+                                key={index}
+                                className={`flex ${msg.sender === "admin" ? "justify-end" : "justify-start"}`}
+                              >
+                                <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed shadow-sm font-sans font-medium text-left ${
+                                  msg.sender === "admin"
+                                    ? "bg-ink text-white rounded-tr-none"
+                                    : "bg-white border border-border/30 text-ink rounded-tl-none"
+                                }`}>
+                                  <p>{msg.text}</p>
+                                  <span className={`text-[8px] mt-1 block font-mono font-medium ${
+                                    msg.sender === "admin" ? "text-white/60 text-right" : "text-muted-foreground text-left"
+                                  }`}>
+                                    {msg.timestamp}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Message input panel */}
+                          <div className="p-4 bg-white border-t border-border/20">
+                            <form
+                              onSubmit={async (e) => {
+                                e.preventDefault();
+                                if (!chatInputText.trim()) return;
+
+                                const currentMsgText = chatInputText.trim();
+                                const now = new Date();
+                                const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                                // Append admin message locally first
+                                setChats(prev => prev.map(c => {
+                                  if (c.id === selectedChat.id) {
+                                    return {
+                                      ...c,
+                                      lastMessage: currentMsgText,
+                                      timestamp: timeStr,
+                                      messages: [
+                                        ...c.messages,
+                                        { sender: "admin", text: currentMsgText, timestamp: timeStr }
+                                      ]
+                                    };
+                                  }
+                                  return c;
+                                }));
+                                
+                                setChatInputText("");
+
+                                try {
+                                  await sendChatMessage(selectedChat.id, 'admin', currentMsgText);
+                                } catch (err) {
+                                  console.error("Failed to send chat message:", err);
+                                  showToast("Failed to transmit support message", "error");
+                                }
+
+                              }}
+                              className="flex gap-2"
+                            >
+                              <input
+                                type="text"
+                                placeholder={`Type message to send to ${selectedChat.customerName}...`}
+                                value={chatInputText}
+                                onChange={(e) => setChatInputText(e.target.value)}
+                                className="flex-1 bg-secondary/15 border border-border/30 focus:border-gold/40 rounded-full px-5 py-2.5 text-xs outline-none font-sans font-medium text-ink"
+                                required
+                              />
+                              <button
+                                type="submit"
+                                className="size-10 bg-ink hover:bg-gold text-white rounded-full flex items-center justify-center shrink-0 transition-all shadow-soft cursor-pointer border-none"
+                              >
+                                <Send className="size-4" />
+                              </button>
+                            </form>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
             </>
           )}
 
@@ -1464,10 +2140,31 @@ function AdminDashboard() {
 
               <div className="px-8 py-6 border-t border-border/40 bg-secondary/5 flex gap-3">
                 <button onClick={() => handleStatusUpdate(selectedOrder.id, "shipped")} className="flex-1 bg-ink text-white py-3 rounded-full text-[10px] tracking-wider uppercase font-bold hover:bg-gold transition shadow-soft cursor-pointer text-center">
-                  Fulfill & Ship
+                  Fulfill &amp; Ship
                 </button>
                 <button onClick={() => handleStatusUpdate(selectedOrder.id, "completed")} className="flex-1 border border-border/60 hover:bg-secondary py-3 rounded-full text-[10px] tracking-wider uppercase font-bold text-ink transition cursor-pointer text-center">
                   Mark Complete
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!window.confirm(`Permanently delete order ${selectedOrder.id}? This cannot be undone.`)) return;
+                    try {
+                      const res = await deleteOrder(selectedOrder.id);
+                      if (res.success) {
+                        setOrders(prev => prev.filter(o => o.id !== selectedOrder.id));
+                        setSelectedOrder(null);
+                        showToast(`Order ${selectedOrder.id} deleted successfully`, "success");
+                      } else {
+                        showToast(res.error || "Failed to delete order", "error");
+                      }
+                    } catch (err) {
+                      showToast("Network error while deleting order", "error");
+                    }
+                  }}
+                  className="shrink-0 p-3 rounded-full border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white hover:border-rose-600 transition cursor-pointer"
+                  title="Delete Order"
+                >
+                  <Trash2 className="size-4" />
                 </button>
               </div>
 
@@ -1668,18 +2365,56 @@ function AdminDashboard() {
                     onClick={() => setProductForm({ ...productForm, useCustomImage: !productForm.useCustomImage })}
                     className="text-[9px] tracking-wider uppercase text-gold hover:text-ink transition font-bold cursor-pointer"
                   >
-                    {productForm.useCustomImage ? "Preset Assets" : "Custom URL"}
+                    {productForm.useCustomImage ? "Preset Assets" : "Custom URL / Upload"}
                   </button>
                 </div>
 
                 {productForm.useCustomImage ? (
-                  <input
-                    type="url"
-                    placeholder="https://images.unsplash.com/..."
-                    value={productForm.imageCustom}
-                    onChange={(e) => setProductForm({ ...productForm, imageCustom: e.target.value })}
-                    className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none"
-                  />
+                  <div className="space-y-2">
+                    <input
+                      type="url"
+                      placeholder="https://images.unsplash.com/..."
+                      value={productForm.imageCustom}
+                      onChange={(e) => setProductForm({ ...productForm, imageCustom: e.target.value })}
+                      className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none"
+                    />
+                    
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="cloudinary-upload-add"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="cloudinary-upload-add"
+                        className="w-full bg-secondary/10 border border-dashed border-border/50 hover:border-gold/50 rounded-xl px-4 py-3 text-xs outline-none flex items-center justify-center gap-2 cursor-pointer transition-all hover:bg-secondary/20"
+                      >
+                        {isUploadingImage ? (
+                          <>
+                            <Loader2 className="size-3.5 animate-spin text-gold" />
+                            <span className="text-muted-foreground">Uploading to Cloudinary...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="size-3.5 text-gold" />
+                            <span className="text-ink font-bold">Upload Local File to Cloudinary</span>
+                          </>
+                        )}
+                      </label>
+                    </div>
+
+                    {productForm.imageCustom && (
+                      <div className="flex items-center gap-3 bg-secondary/10 p-3 rounded-xl border border-border/20">
+                        <img src={productForm.imageCustom} className="size-12 object-cover rounded-lg shrink-0 border border-border/30" alt="Preview" />
+                        <div className="min-w-0 flex-1 text-left">
+                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Cloudinary Upload Preview</div>
+                          <div className="text-[10px] text-ink truncate font-mono">{productForm.imageCustom}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="grid grid-cols-4 gap-2">
                     {PRESET_IMAGES.map((img, idx) => (
@@ -1813,18 +2548,56 @@ function AdminDashboard() {
                     onClick={() => setProductForm({ ...productForm, useCustomImage: !productForm.useCustomImage })}
                     className="text-[9px] tracking-wider uppercase text-gold hover:text-ink transition font-bold cursor-pointer"
                   >
-                    {productForm.useCustomImage ? "Preset Assets" : "Custom URL"}
+                    {productForm.useCustomImage ? "Preset Assets" : "Custom URL / Upload"}
                   </button>
                 </div>
 
                 {productForm.useCustomImage ? (
-                  <input
-                    type="url"
-                    placeholder="https://images.unsplash.com/..."
-                    value={productForm.imageCustom}
-                    onChange={(e) => setProductForm({ ...productForm, imageCustom: e.target.value })}
-                    className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none"
-                  />
+                  <div className="space-y-2">
+                    <input
+                      type="url"
+                      placeholder="https://images.unsplash.com/..."
+                      value={productForm.imageCustom}
+                      onChange={(e) => setProductForm({ ...productForm, imageCustom: e.target.value })}
+                      className="w-full bg-secondary/15 border border-border/40 focus:border-gold/40 rounded-xl px-4 py-2.5 text-xs outline-none"
+                    />
+                    
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="cloudinary-upload-edit"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="cloudinary-upload-edit"
+                        className="w-full bg-secondary/10 border border-dashed border-border/50 hover:border-gold/50 rounded-xl px-4 py-3 text-xs outline-none flex items-center justify-center gap-2 cursor-pointer transition-all hover:bg-secondary/20"
+                      >
+                        {isUploadingImage ? (
+                          <>
+                            <Loader2 className="size-3.5 animate-spin text-gold" />
+                            <span className="text-muted-foreground">Uploading to Cloudinary...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="size-3.5 text-gold" />
+                            <span className="text-ink font-bold">Upload Local File to Cloudinary</span>
+                          </>
+                        )}
+                      </label>
+                    </div>
+
+                    {productForm.imageCustom && (
+                      <div className="flex items-center gap-3 bg-secondary/10 p-3 rounded-xl border border-border/20">
+                        <img src={productForm.imageCustom} className="size-12 object-cover rounded-lg shrink-0 border border-border/30" alt="Preview" />
+                        <div className="min-w-0 flex-1 text-left">
+                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Cloudinary Upload Preview</div>
+                          <div className="text-[10px] text-ink truncate font-mono">{productForm.imageCustom}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="grid grid-cols-4 gap-2">
                     {PRESET_IMAGES.map((img, idx) => (
