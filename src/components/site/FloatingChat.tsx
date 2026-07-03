@@ -23,7 +23,7 @@ function getSocket(): Socket {
 export function FloatingChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [session, setSession] = useState<{ id: string; name: string; email: string } | null>(null);
-  const [connected, setConnected] = useState(false);
+  const [socketReady, setSocketReady] = useState(false); // tracks if socket is actually usable
 
   // Registration Form
   const [regForm, setRegForm] = useState({ name: "", email: "" });
@@ -47,8 +47,16 @@ export function FloatingChat() {
     const socket = getSocket();
     socketRef.current = socket;
 
-    socket.on("connect", () => setConnected(true));
-    socket.on("disconnect", () => setConnected(false));
+    socket.on("connect", () => setSocketReady(true));
+    socket.on("disconnect", () => setSocketReady(false));
+
+    // If socket doesn't connect within 5 s (e.g. Vercel/serverless), give up cleanly
+    const timeout = setTimeout(() => {
+      if (!socket.connected) {
+        socket.disconnect();
+        setSocketReady(false);
+      }
+    }, 5000);
 
     // Incoming message from admin (real-time push)
     socket.on("receive-message", (data: { chatId: string; message: ChatMessage }) => {
@@ -72,6 +80,7 @@ export function FloatingChat() {
     });
 
     return () => {
+      clearTimeout(timeout);
       socket.off("receive-message");
       socket.off("admin-typing");
       socket.off("admin-typing-stop");
@@ -108,9 +117,7 @@ export function FloatingChat() {
     socket.emit("join-chat", session.id);
   }, [session]);
 
-  // ──────────────────────────────────────────────────────────
-  // LOAD INITIAL MESSAGES WHEN CHAT OPENS
-  // ──────────────────────────────────────────────────────────
+  // Load initial messages + set up fallback HTTP polling when socket isn't available
   useEffect(() => {
     if (!isOpen || !session?.id) return;
     // Fetch history once via HTTP on open
@@ -120,7 +127,20 @@ export function FloatingChat() {
         if (res.success && res.chat) setMessages(res.chat.messages || []);
       })
       .catch(err => console.error("Failed to load chat history:", err));
-  }, [isOpen, session]);
+
+    // Fallback polling: only runs when Socket.IO is NOT connected
+    const poll = setInterval(() => {
+      if (socketReady) return; // socket handles it — no need to poll
+      fetch(`/api/chat/get?id=${encodeURIComponent(session.id)}`)
+        .then(r => r.json())
+        .then(res => {
+          if (res.success && res.chat) setMessages(res.chat.messages || []);
+        })
+        .catch(() => {});
+    }, 4000);
+
+    return () => clearInterval(poll);
+  }, [isOpen, session, socketReady]);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -171,11 +191,26 @@ export function FloatingChat() {
     const optimisticMsg: ChatMessage = { sender: "customer", text: currentText, timestamp };
     setMessages(prev => [...prev, optimisticMsg]);
 
-    // Emit via socket — server persists to DB and broadcasts to admin
-    getSocket().emit("send-message", { chatId: session.id, sender: "customer", text: currentText }, () => {
-      setIsSending(false);
-    });
-  }, [inputText, session, isSending]);
+    if (socketReady) {
+      // Send via Socket.IO when available
+      getSocket().emit("send-message", { chatId: session.id, sender: "customer", text: currentText }, () => {
+        setIsSending(false);
+      });
+    } else {
+      // Fallback: HTTP POST (works on Vercel)
+      try {
+        await fetch('/api/chat/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: session.id, sender: 'customer', text: currentText }),
+        });
+      } catch (err) {
+        console.error("Error sending message:", err);
+      } finally {
+        setIsSending(false);
+      }
+    }
+  }, [inputText, session, isSending, socketReady]);
 
   // ──────────────────────────────────────────────────────────
   // RENDER
@@ -206,14 +241,12 @@ export function FloatingChat() {
                 <div className="size-10 rounded-full bg-white border border-gold/40 flex items-center justify-center p-1 overflow-hidden">
                   <img src={logo} alt="TSR Logo" className="size-full object-contain rounded-full" />
                 </div>
-                {/* Live indicator — green if socket connected */}
-                <span className={`absolute bottom-0 right-0 size-2.5 border border-ink rounded-full transition-colors ${connected ? "bg-emerald-500" : "bg-amber-400 animate-pulse"}`} />
+                {/* Always-green live indicator */}
+                <span className="absolute bottom-0 right-0 size-2.5 bg-emerald-500 border border-ink rounded-full" />
               </div>
               <div>
                 <h3 className="font-display text-sm font-semibold tracking-wide">TSR Skin and Hair Care</h3>
-                <p className="text-[10px] font-serif italic text-accent/80">
-                  {connected ? "Live Botanical Advisor" : "Reconnecting…"}
-                </p>
+                <p className="text-[10px] font-serif italic text-accent/80">Live Botanical Advisor</p>
               </div>
             </div>
             <button
