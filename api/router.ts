@@ -910,7 +910,7 @@ async function handleGetProducts(req: any, res: any) {
   if (req.method !== 'GET') return res.status(405).json({ message: 'Method not allowed' });
   try {
     const { db } = await connectToDatabase();
-    let productsList = await db.collection("products").find({}).toArray();
+    let productsList: any[] = await db.collection("products").find({}).toArray();
 
     if (productsList.length === 0) {
       const initialProducts = [
