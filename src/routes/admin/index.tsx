@@ -1996,7 +1996,7 @@ function AdminDashboard() {
 
                                 // Stop typing indicator
                                 const sock = (window as any).__adminChatSocket;
-                                if (sock) sock.emit('admin-typing-stop', selectedChat.id);
+                                if (sock?.connected) sock.emit('admin-typing-stop', selectedChat.id);
 
                                 // Optimistic local update
                                 setChats(prev => prev.map(c => {
@@ -2016,11 +2016,11 @@ function AdminDashboard() {
 
                                 setChatInputText("");
 
-                                // Send via Socket.IO (persists to DB + pushes to customer)
-                                if (sock) {
+                                // Send via Socket.IO if connected, otherwise HTTP (works on Vercel)
+                                if (sock?.connected) {
                                   sock.emit('send-message', { chatId: selectedChat.id, sender: 'admin', text: currentMsgText });
                                 } else {
-                                  // Fallback to HTTP
+                                  // HTTP fallback — always works, saves to DB, customer poll picks it up
                                   try {
                                     await sendChatMessage(selectedChat.id, 'admin', currentMsgText);
                                   } catch (err) {
@@ -2039,7 +2039,7 @@ function AdminDashboard() {
                                 onChange={(e) => {
                                   setChatInputText(e.target.value);
                                   const sock = (window as any).__adminChatSocket;
-                                  if (sock) {
+                                  if (sock?.connected) {
                                     if (e.target.value.trim()) {
                                       sock.emit('admin-typing', selectedChat.id);
                                     } else {
