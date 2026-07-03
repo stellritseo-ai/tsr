@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { X, Send, Loader2, Sparkles } from "lucide-react";
-import { io, Socket } from "socket.io-client";
-import { startChatThread } from "@/lib/serverFunctions";
+import { startChatThread, sendChatMessage, getChatThread } from "@/lib/serverFunctions";
 import logo from "@/assets/logo.png";
 
 interface ChatMessage {
@@ -10,20 +9,9 @@ interface ChatMessage {
   timestamp: string;
 }
 
-// Singleton socket — created once, reused across renders
-let _socket: Socket | null = null;
-
-function getSocket(): Socket {
-  if (!_socket) {
-    _socket = io({ path: "/socket.io", transports: ["websocket", "polling"] });
-  }
-  return _socket;
-}
-
 export function FloatingChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [session, setSession] = useState<{ id: string; name: string; email: string } | null>(null);
-  const [socketReady, setSocketReady] = useState(false); // tracks if socket is actually usable
 
   // Registration Form
   const [regForm, setRegForm] = useState({ name: "", email: "" });
@@ -34,122 +22,120 @@ export function FloatingChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [isTyping, setIsTyping] = useState(false); // admin typing indicator
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const socketRef = useRef<Socket | null>(null);
-  const sessionRef = useRef<string | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
+  const socketRef = useRef<any>(null);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ──────────────────────────────────────────────────────────
-  // SOCKET.IO SETUP
-  // ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    const socket = getSocket();
-    socketRef.current = socket;
-
-    socket.on("connect", () => setSocketReady(true));
-    socket.on("disconnect", () => setSocketReady(false));
-
-    // If socket doesn't connect within 5 s (e.g. Vercel/serverless), give up cleanly
-    const timeout = setTimeout(() => {
-      if (!socket.connected) {
-        socket.disconnect();
-        setSocketReady(false);
-      }
-    }, 5000);
-
-    // Incoming message from admin (real-time push)
-    socket.on("receive-message", (data: { chatId: string; message: ChatMessage }) => {
-      if (data.chatId === sessionRef.current) {
-        setMessages(prev => {
-          // Deduplicate: skip if last message matches (in case HTTP saved it too)
-          const last = prev[prev.length - 1];
-          if (last && last.text === data.message.text && last.sender === data.message.sender) return prev;
-          return [...prev, data.message];
-        });
-        setIsTyping(false);
-      }
-    });
-
-    // Admin typing indicator
-    socket.on("admin-typing", (chatId: string) => {
-      if (chatId === sessionRef.current) setIsTyping(true);
-    });
-    socket.on("admin-typing-stop", (chatId: string) => {
-      if (chatId === sessionRef.current) setIsTyping(false);
-    });
-
-    return () => {
-      clearTimeout(timeout);
-      socket.off("receive-message");
-      socket.off("admin-typing");
-      socket.off("admin-typing-stop");
-      socket.off("connect");
-      socket.off("disconnect");
-    };
-  }, []);
-
-  // ──────────────────────────────────────────────────────────
-  // RESTORE SESSION FROM LOCALSTORAGE
-  // ──────────────────────────────────────────────────────────
+  // ── Restore session from localStorage ─────────────────────
   useEffect(() => {
     const saved = localStorage.getItem("tsr_chat_session");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.id) {
+        if (parsed?.id) {
           setSession(parsed);
-          sessionRef.current = parsed.id;
+          sessionIdRef.current = parsed.id;
         }
-      } catch (e) {
-        console.error("Error parsing chat session:", e);
-      }
+      } catch { /* ignore */ }
     }
   }, []);
 
-  // ──────────────────────────────────────────────────────────
-  // JOIN SOCKET ROOM WHEN SESSION IS KNOWN
-  // ──────────────────────────────────────────────────────────
+  // ── Try Socket.IO when chat opens + fallback HTTP polling ──
   useEffect(() => {
-    if (!session?.id) return;
-    sessionRef.current = session.id;
-    const socket = getSocket();
-    socket.emit("join-chat", session.id);
-  }, [session]);
+    if (!isOpen || !sessionIdRef.current) return;
 
-  // Load initial messages + set up fallback HTTP polling when socket isn't available
-  useEffect(() => {
-    if (!isOpen || !session?.id) return;
-    // Fetch history once via HTTP on open
-    fetch(`/api/chat/get?id=${encodeURIComponent(session.id)}`)
-      .then(r => r.json())
-      .then(res => {
-        if (res.success && res.chat) setMessages(res.chat.messages || []);
-      })
-      .catch(err => console.error("Failed to load chat history:", err));
+    const chatId = sessionIdRef.current;
 
-    // Fallback polling: only runs when Socket.IO is NOT connected
-    const poll = setInterval(() => {
-      if (socketReady) return; // socket handles it — no need to poll
-      fetch(`/api/chat/get?id=${encodeURIComponent(session.id)}`)
-        .then(r => r.json())
-        .then(res => {
-          if (res.success && res.chat) setMessages(res.chat.messages || []);
-        })
+    // Fetch messages immediately on open
+    const fetchMessages = () => {
+      getChatThread(chatId)
+        .then(res => { if (res?.success && res.chat) setMessages(res.chat.messages || []); })
+        .catch(() => {});
+    };
+    fetchMessages();
+
+    // Try Socket.IO for real-time (local dev / Node.js server)
+    let socketConnected = false;
+    try {
+      import("socket.io-client").then(({ io }) => {
+        const socket = io({
+          path: "/socket.io",
+          transports: ["websocket", "polling"],
+          reconnection: false, // don't spam reconnect on Vercel
+          timeout: 4000,
+        });
+
+        socketRef.current = socket;
+
+        socket.on("connect", () => {
+          socketConnected = true;
+          socket.emit("join-chat", chatId);
+          // Cancel HTTP poll since socket handles it
+          if (pollTimerRef.current) {
+            clearInterval(pollTimerRef.current);
+            pollTimerRef.current = null;
+          }
+        });
+
+        socket.on("receive-message", (data: { chatId: string; message: ChatMessage }) => {
+          if (data.chatId !== chatId) return;
+          setMessages(prev => {
+            const last = prev[prev.length - 1];
+            if (last && last.text === data.message.text && last.sender === data.message.sender) return prev;
+            return [...prev, data.message];
+          });
+        });
+
+        socket.on("admin-typing", (id: string) => {
+          if (id === chatId) setIsTyping(true);
+        });
+        socket.on("admin-typing-stop", (id: string) => {
+          if (id === chatId) setIsTyping(false);
+        });
+
+        socket.on("connect_error", () => {
+          if (!socketConnected) {
+            socket.disconnect();
+            startPolling(chatId);
+          }
+        });
+      });
+    } catch {
+      startPolling(chatId);
+    }
+
+    // Start HTTP polling immediately as backup; cancel when socket connects
+    startPolling(chatId);
+
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, session?.id]);
+
+  const [isTyping, setIsTyping] = useState(false);
+
+  const startPolling = (chatId: string) => {
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    pollTimerRef.current = setInterval(() => {
+      getChatThread(chatId)
+        .then(res => { if (res?.success && res.chat) setMessages(res.chat.messages || []); })
         .catch(() => {});
     }, 4000);
+  };
 
-    return () => clearInterval(poll);
-  }, [isOpen, session, socketReady]);
-
-  // Auto-scroll on new messages
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isOpen, isTyping]);
 
-  // ──────────────────────────────────────────────────────────
-  // REGISTRATION
-  // ──────────────────────────────────────────────────────────
+  // ── Registration ───────────────────────────────────────────
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!regForm.name.trim() || !regForm.email.trim()) return;
@@ -158,13 +144,19 @@ export function FloatingChat() {
     try {
       const res = await startChatThread(regForm.name.trim(), regForm.email.trim());
       if (res?.success && res.chat) {
-        const newSession = { id: res.chat.id, name: res.chat.customerName, email: res.chat.customerEmail };
+        const newSession = {
+          id: res.chat.id,
+          name: res.chat.customerName,
+          email: res.chat.customerEmail,
+        };
         localStorage.setItem("tsr_chat_session", JSON.stringify(newSession));
+        sessionIdRef.current = newSession.id;
         setSession(newSession);
-        sessionRef.current = newSession.id;
         setMessages(res.chat.messages || []);
-        // Join socket room immediately
-        getSocket().emit("join-chat", newSession.id);
+        // Join socket room if connected
+        if (socketRef.current?.connected) {
+          socketRef.current.emit("join-chat", newSession.id);
+        }
       } else {
         setRegError(res?.error || "Failed to start conversation. Please try again.");
       }
@@ -175,62 +167,58 @@ export function FloatingChat() {
     }
   };
 
-  // ──────────────────────────────────────────────────────────
-  // SEND MESSAGE VIA SOCKET.IO (instant delivery)
-  // ──────────────────────────────────────────────────────────
+  // ── Send Message ───────────────────────────────────────────
   const handleSendMessage = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim() || !session?.id || isSending) return;
+    const text = inputText.trim();
+    if (!text || !sessionIdRef.current || isSending) return;
 
-    const currentText = inputText.trim();
     const timestamp = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     setInputText("");
     setIsSending(true);
 
-    // Optimistic UI update
-    const optimisticMsg: ChatMessage = { sender: "customer", text: currentText, timestamp };
-    setMessages(prev => [...prev, optimisticMsg]);
+    // Optimistic update
+    setMessages(prev => [...prev, { sender: "customer", text, timestamp }]);
 
-    if (socketReady) {
-      // Send via Socket.IO when available
-      getSocket().emit("send-message", { chatId: session.id, sender: "customer", text: currentText }, () => {
-        setIsSending(false);
-      });
+    // Safety: always reset isSending within 6s regardless
+    const safeguard = setTimeout(() => setIsSending(false), 6000);
+
+    if (socketRef.current?.connected) {
+      // Real-time via Socket.IO
+      socketRef.current.emit(
+        "send-message",
+        { chatId: sessionIdRef.current, sender: "customer", text },
+        () => { clearTimeout(safeguard); setIsSending(false); }
+      );
     } else {
-      // Fallback: HTTP POST (works on Vercel)
+      // HTTP fallback (works on Vercel)
       try {
-        await fetch('/api/chat/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: session.id, sender: 'customer', text: currentText }),
-        });
+        await sendChatMessage(sessionIdRef.current, "customer", text);
       } catch (err) {
-        console.error("Error sending message:", err);
+        console.error("Failed to send message:", err);
       } finally {
+        clearTimeout(safeguard);
         setIsSending(false);
       }
     }
-  }, [inputText, session, isSending, socketReady]);
+  }, [inputText, isSending]);
 
-  // ──────────────────────────────────────────────────────────
-  // RENDER
-  // ──────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────
   return (
     <>
-      {/* ── Floating Trigger Button ── */}
+      {/* Floating Trigger Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen(v => !v)}
         className="fixed bottom-6 right-6 size-14 bg-white hover:bg-[#FAF7F2] text-white rounded-full flex items-center justify-center shadow-luxe transition-all duration-300 z-50 hover:scale-105 active:scale-95 cursor-pointer border-2 border-gold/70 p-1.5"
         title="Botanical Chat Consultation"
       >
-        {isOpen ? (
-          <X className="size-6 text-gold animate-fade-in" />
-        ) : (
-          <img src={logo} alt="TSR Logo" className="size-full object-contain rounded-full animate-fade-in" />
-        )}
+        {isOpen
+          ? <X className="size-6 text-gold animate-fade-in" />
+          : <img src={logo} alt="TSR Logo" className="size-full object-contain rounded-full animate-fade-in" />
+        }
       </button>
 
-      {/* ── Chat Popover ── */}
+      {/* Chat Popover */}
       {isOpen && (
         <div className="fixed bottom-24 right-6 w-96 max-w-[calc(100vw-2rem)] h-[520px] bg-white border border-border/30 rounded-3xl shadow-luxe z-50 flex flex-col overflow-hidden animate-fade-in font-sans">
 
@@ -241,7 +229,6 @@ export function FloatingChat() {
                 <div className="size-10 rounded-full bg-white border border-gold/40 flex items-center justify-center p-1 overflow-hidden">
                   <img src={logo} alt="TSR Logo" className="size-full object-contain rounded-full" />
                 </div>
-                {/* Always-green live indicator */}
                 <span className="absolute bottom-0 right-0 size-2.5 bg-emerald-500 border border-ink rounded-full" />
               </div>
               <div>
@@ -260,7 +247,7 @@ export function FloatingChat() {
           {/* Body */}
           <div className="flex-1 flex flex-col bg-[#FDFCF9] overflow-hidden">
             {!session ? (
-              /* ── Registration Form ── */
+              /* Registration Form */
               <div className="flex-1 overflow-y-auto p-6 flex flex-col justify-center space-y-6">
                 <div className="text-center space-y-2">
                   <h4 className="font-display text-xl text-ink">Begin Consultation</h4>
@@ -277,14 +264,14 @@ export function FloatingChat() {
                   <div className="space-y-1.5">
                     <label className="text-[9px] tracking-widest uppercase text-muted-foreground px-1 font-bold">Your Name</label>
                     <input required type="text" placeholder="e.g. Clara Sterling"
-                      value={regForm.name} onChange={e => setRegForm({ ...regForm, name: e.target.value })}
+                      value={regForm.name} onChange={e => setRegForm(f => ({ ...f, name: e.target.value }))}
                       className="w-full bg-white border border-border/60 rounded-xl px-4 py-3 text-xs outline-none focus:border-accent/40 transition-all font-medium text-ink"
                     />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[9px] tracking-widest uppercase text-muted-foreground px-1 font-bold">Email Address</label>
                     <input required type="email" placeholder="e.g. clara@example.com"
-                      value={regForm.email} onChange={e => setRegForm({ ...regForm, email: e.target.value })}
+                      value={regForm.email} onChange={e => setRegForm(f => ({ ...f, email: e.target.value }))}
                       className="w-full bg-white border border-border/60 rounded-xl px-4 py-3 text-xs outline-none focus:border-accent/40 transition-all font-medium text-ink"
                     />
                   </div>
@@ -296,9 +283,16 @@ export function FloatingChat() {
                 </form>
               </div>
             ) : (
-              /* ── Message Feed ── */
+              /* Message Feed */
               <>
                 <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                  {messages.length === 0 && (
+                    <div className="flex flex-col items-center justify-center h-full text-center space-y-3 opacity-60">
+                      <Sparkles className="size-8 text-accent/40" />
+                      <p className="text-xs text-muted-foreground font-medium">Your consultation thread is ready.<br />Send us a message to get started.</p>
+                    </div>
+                  )}
+
                   {messages.map((msg, index) => {
                     const isAdmin = msg.sender === "admin";
                     return (
@@ -322,7 +316,7 @@ export function FloatingChat() {
                     );
                   })}
 
-                  {/* Typing indicator bubble */}
+                  {/* Typing indicator */}
                   {isTyping && (
                     <div className="flex gap-3 justify-start">
                       <div className="size-7 rounded-full bg-accent/15 border border-accent/20 flex items-center justify-center shrink-0">
