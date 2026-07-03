@@ -167,6 +167,15 @@ export const readChatThread = async (chatId: string) => {
   return response.json();
 };
 
+export const deleteChatThread = async (chatId: string) => {
+  const response = await fetch('/api/chat/delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chatId }),
+  });
+  return response.json();
+};
+
 export const incrementVisitors = async () => {
   const response = await fetch('/api/visitors/increment', {
     method: 'POST',

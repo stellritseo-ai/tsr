@@ -26,6 +26,7 @@ import {
   getChatThreads,
   sendChatMessage,
   readChatThread,
+  deleteChatThread,
   getVisitorsCount,
   deleteOrder
 } from "@/lib/serverFunctions";
@@ -1892,14 +1893,9 @@ function AdminDashboard() {
                             </div>
 
                             <div className="flex-1 min-w-0 space-y-1">
-                              <div className="flex justify-between items-baseline gap-2">
-                                <span className="text-xs truncate text-ink font-semibold">
-                                  {chat.customerName}
-                                </span>
-                                <span className="text-[9px] text-muted-foreground font-mono font-medium shrink-0">
-                                  {chat.timestamp}
-                                </span>
-                              </div>
+                              <span className="text-xs truncate text-ink font-semibold block">
+                                {chat.customerName}
+                              </span>
                               <p className={`text-[11px] truncate leading-relaxed font-sans font-medium ${
                                 chat.unread ? "text-ink font-bold" : "text-muted-foreground"
                               }`}>
@@ -1907,9 +1903,40 @@ function AdminDashboard() {
                               </p>
                             </div>
 
-                            {chat.unread && (
-                              <div className="size-2 bg-emerald-500 rounded-full self-center shrink-0" />
-                            )}
+                            <div className="flex flex-col items-end justify-between shrink-0 gap-1.5 self-stretch">
+                              <span className="text-[9px] text-muted-foreground font-mono font-medium">
+                                {chat.timestamp}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                {chat.unread && (
+                                  <div className="size-2 bg-emerald-500 rounded-full" />
+                                )}
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (!window.confirm(`Delete chat thread with ${chat.customerName}?`)) return;
+                                    try {
+                                      const result = await deleteChatThread(chat.id);
+                                      if (result && result.success) {
+                                        setChats(prev => prev.filter(c => c.id !== chat.id));
+                                        if (selectedChatId === chat.id) {
+                                          setSelectedChatId(null);
+                                        }
+                                        showToast("Chat thread deleted");
+                                      } else {
+                                        showToast(result.error || "Failed to delete chat thread", "error");
+                                      }
+                                    } catch (err: any) {
+                                      showToast("Network error deleting chat thread", "error");
+                                    }
+                                  }}
+                                  className="p-1 text-muted-foreground/50 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all border-none cursor-pointer"
+                                  title="Delete Chat Thread"
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         ))}
 
@@ -1955,9 +1982,32 @@ function AdminDashboard() {
                                 <p className="text-[10px] text-muted-foreground font-mono font-medium">{selectedChat.customerEmail}</p>
                               </div>
                             </div>
-                            <span className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-200/50 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider font-mono flex items-center gap-1">
-                              <span className="size-1.5 bg-emerald-500 rounded-full animate-ping" /> Connection Established
-                            </span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-200/50 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider font-mono flex items-center gap-1">
+                                <span className="size-1.5 bg-emerald-500 rounded-full animate-ping" /> Connection Established
+                              </span>
+                              <button
+                                onClick={async () => {
+                                  if (!window.confirm(`Are you sure you want to delete the chat thread with ${selectedChat.customerName}? This will delete all messages permanently.`)) return;
+                                  try {
+                                    const result = await deleteChatThread(selectedChat.id);
+                                    if (result && result.success) {
+                                      setChats(prev => prev.filter(c => c.id !== selectedChat.id));
+                                      setSelectedChatId(null);
+                                      showToast("Chat thread deleted");
+                                    } else {
+                                      showToast(result.error || "Failed to delete chat thread", "error");
+                                    }
+                                  } catch (err: any) {
+                                    showToast("Network error deleting chat thread", "error");
+                                  }
+                                }}
+                                className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-all cursor-pointer border-none flex items-center justify-center shrink-0"
+                                title="Delete Chat Thread"
+                              >
+                                <Trash2 className="size-4" />
+                              </button>
+                            </div>
                           </div>
 
                           {/* Message Bubbles Container */}

@@ -1417,6 +1417,20 @@ async function handleChatRead(req: any, res: any) {
   }
 }
 
+async function handleDeleteChat(req: any, res: any) {
+  if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
+  try {
+    const { db } = await connectToDatabase();
+    const { chatId } = req.body;
+    if (!chatId) return res.status(400).json({ success: false, error: 'Missing chat ID' });
+
+    const result = await db.collection("chats").deleteOne({ id: chatId });
+    res.status(200).json({ success: true, deletedCount: result.deletedCount });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
 async function handleDeleteOrder(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
   try {
@@ -1599,6 +1613,8 @@ export default async function handler(req: any, res: any) {
         return await handleChatList(req, res);
       case '/api/chat/read':
         return await handleChatRead(req, res);
+      case '/api/chat/delete':
+        return await handleDeleteChat(req, res);
       case '/api/delete-order':
         return await handleDeleteOrder(req, res);
       case '/api/visitors/increment':
