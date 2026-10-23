@@ -5,6 +5,7 @@ import {
   createRootRouteWithContext,
   useRouterState,
 } from "@tanstack/react-router";
+import { Analytics } from "@vercel/analytics/react";
 import { FloatingChat } from "@/components/site/FloatingChat";
 import { incrementVisitors } from "@/lib/serverFunctions";
 
@@ -29,6 +30,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <Outlet />
       {!isAdmin && <FloatingChat />}
+      <Analytics />
     </QueryClientProvider>
   );
 }
