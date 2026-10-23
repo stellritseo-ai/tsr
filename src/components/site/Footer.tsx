@@ -1,8 +1,27 @@
 import { Instagram, Twitter, Facebook, Youtube } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 const cols = [
-  { title: "About", links: ["Home", "Story", "Product", "Contact Us"] },
-  { title: "Help", links: ["Contact", "Shipping", "Returns", "FAQ", "Track order"] },
+  {
+    title: "About",
+    links: [
+      { label: "Home", to: "/" },
+      { label: "Story", to: "/story" },
+      { label: "Product", to: "/products" },
+      { label: "Blog", to: "/blog" },
+      { label: "Contact Us", to: "/contact" },
+    ],
+  },
+  {
+    title: "Help",
+    links: [
+      { label: "Contact", to: "/contact" },
+      { label: "Shipping", to: "#" },
+      { label: "Returns", to: "#" },
+      { label: "FAQ", to: "#" },
+      { label: "Track order", to: "#" },
+    ],
+  },
 ];
 
 export function Footer() {
@@ -36,7 +55,17 @@ export function Footer() {
               <div className="text-xs tracking-[0.3em] uppercase opacity-60">{c.title}</div>
               <ul className="mt-5 space-y-3 text-sm">
                 {c.links.map((l) => (
-                  <li key={l}><a href="#" className="opacity-80 hover:opacity-100 transition">{l}</a></li>
+                  <li key={l.label}>
+                    {l.to.startsWith("/") ? (
+                      <Link to={l.to} className="opacity-80 hover:opacity-100 transition">
+                        {l.label}
+                      </Link>
+                    ) : (
+                      <a href={l.to} className="opacity-80 hover:opacity-100 transition">
+                        {l.label}
+                      </a>
+                    )}
+                  </li>
                 ))}
               </ul>
             </div>
